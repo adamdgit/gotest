@@ -1,3 +1,4 @@
 *.db
 go.sum
 backend.exe
+*.exe
