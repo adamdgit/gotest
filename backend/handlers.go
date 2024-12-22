@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -11,6 +12,9 @@ func (app *app) home(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+
+	log.Print("Method: ", r.Method, "\n----------------------------\n",
+		"Body: ", r.Body, "\n----------------------------\n", "Header: ", r.Header)
 
 	// t, err := template.ParseFiles("../frontend/index.html")
 	// if err != nil {

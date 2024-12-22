@@ -33,7 +33,9 @@ function App() {
       <h1>React, TS, Golang</h1>
       Count: {count}
       <br/>
-      <button className='btn' onClick={() => setCount(prev => prev +1)}>Increment ++</button>
+      <button className='btn' onClick={() => setCount(prev => prev +1)}>
+        Increment ++
+      </button>
 
       <ul className='post-list'>
         {posts.map(post => 

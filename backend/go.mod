@@ -1,4 +1,4 @@
-module github.com/adamdgit/gotest
+module github.com/adamdgit/gotest/backend
 
 go 1.23.0
 

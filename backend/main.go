@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	sqlite "github.com/adamdgit/gotest/sql/queries"
+	sqlite "github.com/adamdgit/gotest/backend/sql/queries"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -17,7 +17,7 @@ type app struct {
 }
 
 func main() {
-	db, err := sql.Open("sqlite3", "../sql/app.db")
+	db, err := sql.Open("sqlite3", "./sql/app.db")
 	if err != nil {
 		log.Fatal(err)
 	}

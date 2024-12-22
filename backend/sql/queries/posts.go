@@ -12,6 +12,7 @@ type PostModel struct {
 
 func (m *PostModel) GetAllPosts() ([]models.Post, error) {
 	stmt := `SELECT id, title, content, createdat FROM posts`
+
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
 		return nil, err
