@@ -31,7 +31,7 @@ func main() {
 
 	server := http.Server{
 		Addr:    ADDRESS,
-		Handler: app.routes(),
+		Handler: enableCORS(app.routes()),
 	}
 	log.Println("Listening on: ", ADDRESS)
 
