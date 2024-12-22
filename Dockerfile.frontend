@@ -1,0 +1,32 @@
+# Use the Node.js image
+FROM node:18 AS build
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the frontend package.json and package-lock.json
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the React source code
+COPY frontend/ ./
+
+# Build the frontend
+RUN npm run build
+
+# Stage 2: Serve the app using Nginx
+FROM nginx:stable-alpine
+
+# Copy the built files from the previous stage to Nginx's web root
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy a custom Nginx configuration file (optional, see below for default config)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

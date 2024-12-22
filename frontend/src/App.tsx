@@ -12,7 +12,7 @@ function App() {
   const [posts, setPosts] = useState<Post[]>([]);
 
   async function get_posts() {
-    const res = await fetch("http://localhost:8080");
+    const res = await fetch("http://localhost:8081");
 
     if (res.ok) {
       const data = await res.json()

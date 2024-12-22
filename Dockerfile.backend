@@ -1,0 +1,23 @@
+# Use the official Go image
+FROM golang:1.23.0
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the Go modules manifests
+COPY backend/go.mod backend/go.sum ./
+
+# Download Go modules
+RUN go mod download
+
+# Copy the backend source code
+COPY backend/ ./
+
+# Build the application
+RUN CGO_ENABLED=1 GOOS=linux go build -o /docker-gs-ping
+
+# Expose the backend port
+EXPOSE 8081
+
+# Start the backend application
+CMD ["/docker-gs-ping"]

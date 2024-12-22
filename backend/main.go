@@ -10,7 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const ADDRESS = "127.0.0.1:8080"
+const ADDRESS = "0.0.0.0:8081"
 
 type app struct {
 	posts *sqlite.PostModel
