@@ -2,41 +2,43 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
-	"net/http"
+	"time"
 
-	sqlite "github.com/adamdgit/gotest/backend/sql/queries"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+
+	"github.com/adamdgit/gotest/backend/routes"
 )
 
-const ADDRESS = "0.0.0.0:8081"
-
-type app struct {
-	posts *sqlite.PostModel
-}
+const PORT = ":8081"
 
 func main() {
-	db, err := sql.Open("sqlite3", "./sql/app.db")
+	// Initialise MySQL DB
+	conn := "username:password@tcp(127.0.0.1:3306)/dbname"
+	db, err := sql.Open("mysql", conn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(db)
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+	defer db.Close()
 
-	app := app{
-		posts: &sqlite.PostModel{
-			DB: db,
-		},
-	}
+	// Initialise Fiber
+	app := fiber.New()
 
-	server := http.Server{
-		Addr:    ADDRESS,
-		Handler: enableCORS(app.routes()),
-	}
-	log.Println("Listening on: ", ADDRESS)
+	// Handle CORS
+	app.Use(cors.New())
 
-	err = server.ListenAndServe()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	// Handle static folder
+	app.Static("/", "./public")
+
+	// Setup all API routes
+	routes.RegisterAPIRoutes(app, db)
+
+	// Listen on port
+	log.Fatal(app.Listen(PORT))
+	println("Listening on ", PORT)
 }
