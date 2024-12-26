@@ -21,7 +21,7 @@ func GetAllPosts(app *fiber.App, db *sql.DB) ([]models.Post, error) {
 	for rows.Next() {
 		var post models.Post
 
-		err := rows.Scan(&post.ID, &post.Title, &post.Content)
+		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Created_At, &post.Updated_At)
 		if err != nil {
 			return nil, err
 		}
