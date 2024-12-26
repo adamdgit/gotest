@@ -5,8 +5,9 @@ import (
 )
 
 type Post struct {
-	ID         int       `json:"Id"`
+	ID         int       `json:"id"`
 	Title      string    `json:"title"`
 	Content    string    `json:"content"`
-	Created_At time.Time `json:"createdAt"`
+	Created_At time.Time `json:"created_at"`
+	Updated_At time.Time `json:"updated_at"`
 }
