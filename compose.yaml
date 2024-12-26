@@ -7,11 +7,16 @@ services:
       - "8081:8081"
     volumes:
       - ./backend:/app
-      - ./backend/sql:/app/sql
     environment:
       - DB_PATH=/app/sql/app.db
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root_password
+      - MYSQL_DB=my_database
     networks:
       - app-network  # Define a network for both services
+    depends_0n:
+      - mysql
 
   frontend:
     build:
@@ -28,6 +33,24 @@ services:
     stdin_open: true
     tty: true
 
+  mysql:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password 
+    ports:
+      - "3306:3306"  # Exposing MySQL on port 3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
 networks:
   app-network:  # Ensure both services are on the same Docker network
     driver: bridge
+
+volumes:
+  mysql_data:
