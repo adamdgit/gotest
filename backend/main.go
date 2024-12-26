@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -15,8 +17,14 @@ import (
 const PORT = ":8081"
 
 func main() {
-	// Initialise MySQL DB
-	conn := "username:password@tcp(127.0.0.1:3306)/dbname"
+	username := os.Getenv("DB_USERNAME")
+	password := os.Getenv("DB_PASSWORD")
+	address := os.Getenv("DB_ADDRESS")
+	dbname := os.Getenv("DB_NAME")
+
+	// Initialise MySQL connection string
+	conn := fmt.Sprintf("%s:%s@tcp(%s)/%s", username, password, address, dbname)
+
 	db, err := sql.Open("mysql", conn)
 	if err != nil {
 		log.Fatal(err)
