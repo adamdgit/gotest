@@ -1,31 +1,18 @@
 package routes
 
 import (
-	"database/sql"
-	"log"
-
-	"github.com/adamdgit/gotest/backend/queries"
+	"github.com/adamdgit/gotest/backend/handlers"
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
+func RegisterAPIRoutes(app *fiber.App) {
 
-	// Routes
-	app.Get("/api/v1/posts", func(c *fiber.Ctx) error {
-		posts, err := queries.GetAllPosts(app, db)
-		if err != nil {
-			log.Printf("error: %s", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": err,
-			})
-		}
+	// Post Routes
+	app.Get("/api/v1/posts", handlers.GetAllPosts)
+	app.Get("/api/v1/posts/:id", handlers.GetPostById)
 
-		return c.JSON(posts)
-	})
-
-	app.Get("api/v1/posts/:id", func(c *fiber.Ctx) error {
-		id := c.Params("id")
-		return c.JSON("hello", id)
-	})
+	// Login & Register routes
+	app.Get("/api/auth/login", handlers.Login)
+	app.Get("/api/auth/register", handlers.Register)
 
 }
