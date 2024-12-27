@@ -7,12 +7,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/adamdgit/gotest/backend/routes"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 
-	"github.com/adamdgit/gotest/backend/routes"
+	jwtware "github.com/gofiber/contrib/jwt"
 )
 
 const PORT = ":8081"
@@ -47,13 +48,18 @@ func main() {
 	// Handle CORS
 	app.Use(cors.New())
 
+	// JWT
+	app.Use(jwtware.New(jwtware.Config{
+		SigningKey: jwtware.SigningKey{Key: []byte("secret")},
+	}))
+
 	// Handle static folder
 	app.Static("/", "./public")
 
 	// Setup all API routes
-	routes.RegisterAPIRoutes(app, db)
+	routes.RegisterAPIRoutes(app)
 
 	// Listen on port
 	log.Fatal(app.Listen(PORT))
-	log.Printf("Listening on ", PORT)
+	log.Printf("Listening on %s", PORT)
 }
