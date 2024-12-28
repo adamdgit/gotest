@@ -12,7 +12,7 @@ func RegisterAPIRoutes(app *fiber.App) {
 	app.Get("/api/v1/posts/:id", handlers.GetPostById)
 
 	// Login & Register routes
-	app.Get("/api/auth/login", handlers.Login)
-	app.Get("/api/auth/register", handlers.Register)
+	app.Post("/api/auth/login", handlers.Login)
+	app.Post("/api/auth/register", handlers.Register)
 
 }
