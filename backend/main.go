@@ -53,11 +53,11 @@ func main() {
 		SigningKey: jwtware.SigningKey{Key: []byte("secret")},
 	}))
 
-	// Handle static folder
-	app.Static("/", "./public")
-
 	// Setup all API routes
 	routes.RegisterAPIRoutes(app)
+
+	// Handle static folder
+	app.Static("/", "./public")
 
 	// Listen on port
 	log.Fatal(app.Listen(PORT))
