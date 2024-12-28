@@ -9,6 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
@@ -71,18 +72,45 @@ func GetPostById(c *fiber.Ctx) error {
 	return c.JSON(post)
 }
 
-func Login(c *fiber.Ctx) error {
-	user := c.FormValue("user")
-	pass := c.FormValue("pass")
+func CheckPasswordHash(password string, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
 
-	// Throws Unauthorized error
-	if user != "john" || pass != "doe" {
+func Login(c *fiber.Ctx) error {
+	// Get form data
+	username := c.FormValue("username")
+	password := c.FormValue("password")
+
+	// Get username and password from DB
+	stmt := "SELECT username, password FROM users WHERE users.username = ?"
+
+	row, err := db.Query(stmt, username)
+	if err != nil {
+		log.Printf("Error: %s", err)
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	defer row.Close()
+
+	var user models.User
+
+	err = row.Scan(&user.Username, &user.Password)
+	if err != nil {
+		log.Printf("Error: %s", err)
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	// Check password matches the hash
+	hash := user.Password
+	match := CheckPasswordHash(password, hash)
+
+	if !match {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
 	// Create the Claims
 	claims := jwt.MapClaims{
-		"name":  "John Doe",
+		"name":  username,
 		"admin": true,
 		"exp":   time.Now().Add(time.Hour * 72).Unix(),
 	}
@@ -100,5 +128,14 @@ func Login(c *fiber.Ctx) error {
 }
 
 func Register(c *fiber.Ctx) error {
+
+	// password := "secret"
+	// hash, _ := HashPassword(password)
+
+	// func HashPassword(password string) (string, error) {
+	//   bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	//   return string(bytes), err
+	// }
+
 	return c.JSON("")
 }
