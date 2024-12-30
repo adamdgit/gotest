@@ -12,8 +12,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
-
-	jwtware "github.com/gofiber/contrib/jwt"
 )
 
 const PORT = ":8081"
@@ -49,12 +47,12 @@ func main() {
 	app.Use(cors.New())
 
 	// JWT
-	app.Use(jwtware.New(jwtware.Config{
-		SigningKey: jwtware.SigningKey{Key: []byte("secret")},
-	}))
+	// app.Use(jwtware.New(jwtware.Config{
+	// 	SigningKey: jwtware.SigningKey{Key: []byte("secret")},
+	// }))
 
 	// Setup all API routes
-	routes.RegisterAPIRoutes(app)
+	routes.RegisterAPIRoutes(app, db)
 
 	// Handle static folder
 	app.Static("/", "./public")
