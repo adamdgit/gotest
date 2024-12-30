@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"time"
@@ -24,21 +25,19 @@ func Login(db *sql.DB) fiber.Handler {
 		password := c.FormValue("password")
 
 		// Get username and password from DB
-		stmt := "SELECT username, password FROM users WHERE users.username = ?"
-
-		row, err := db.Query(stmt, username)
-		if err != nil {
-			log.Printf("Error: %s", err)
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		defer row.Close()
+		stmt := "SELECT username, password FROM users WHERE username = ?"
+		row := db.QueryRowContext(context.Background(), stmt, username)
 
 		var user models.User
 
-		err = row.Scan(&user.Username, &user.Password)
-		if err != nil {
+		// If ErrNoRows user has provided invalid login details
+		// else we need to check password is valid
+		err := row.Scan(&user.Username, &user.Password)
+		if err == sql.ErrNoRows {
 			log.Printf("Error: %s", err)
-			return c.SendStatus(fiber.StatusUnauthorized)
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"message": "Invalid Login Credentials",
+			})
 		}
 
 		// Check password matches the hash
