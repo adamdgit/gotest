@@ -16,16 +16,16 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
 	// }
 
 	// secret := os.Getenv("JWT_SECRET")
+	// TODO update "secret" to proper jwt secret from .env
 	authRequired := middleware.NewAuthMiddleware("secret")
-	// NOTE: Add authRequired to routes that need auth protection
 
-	// Post Routes
+	// NOTE: Add authRequired to routes that need auth protection
 	app.Get("/api/v1/posts", handlers.GetAllPosts(db))
 	app.Get("/api/v1/posts/:id", handlers.GetPostById(db))
 
-	// Login & Register routes
+	// Login, Logout, Register
 	app.Post("/api/auth/login", handlers.Login(db))
-	app.Post("/api/auth/logout", authRequired, handlers.Logout) // clears session cookie, no db required
+	app.Post("/api/auth/logout", authRequired, handlers.Logout) // clears http cookie, no db required
 	app.Post("/api/auth/register", handlers.Register(db))
 
 }
