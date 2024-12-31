@@ -3,3 +3,4 @@ go.sum
 backend.exe
 *.exe
 .env
+*.log
