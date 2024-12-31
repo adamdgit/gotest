@@ -3,10 +3,10 @@ package handlers
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/adamdgit/gotest/backend/models"
+	logging "github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -31,7 +31,6 @@ func Login(db *sql.DB) fiber.Handler {
 		// Parse body JSON and extract username, password
 		err := c.BodyParser(&req)
 		if err != nil {
-			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body",
 			})
@@ -50,7 +49,6 @@ func Login(db *sql.DB) fiber.Handler {
 		// else we need to check password is valid
 		err = row.Scan(&user.ID, &user.Username, &user.Password)
 		if err == sql.ErrNoRows {
-			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"message": "Invalid Login Credentials",
 			})
@@ -78,7 +76,7 @@ func Login(db *sql.DB) fiber.Handler {
 		// Generate encoded token and send it as response.
 		t, err := token.SignedString([]byte("secret"))
 		if err != nil {
-			log.Printf("Error: %s", err)
+			logging.UpdateLogFile(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
