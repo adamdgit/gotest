@@ -7,13 +7,16 @@ export default function Login() {
   async function login(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    const formData = new FormData();
-    formData.append("username", username)
-    formData.append("password", password)
-
     const res = await fetch('http://localhost:8081/api/auth/login', {
       method: "POST",
-      body: formData
+      body: JSON.stringify({
+        "username": username,
+        "password": password
+      }),
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
     })
 
     if (res.ok) {
@@ -21,6 +24,22 @@ export default function Login() {
       console.log(data)
     }
   }
+
+
+  async function logout(e:FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const res = await fetch('http://localhost:8081/api/auth/logout', {
+      method: "POST",
+      credentials: "include",
+    })
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log(data)
+    }
+  }
+
 
   return (
     <div>
@@ -31,6 +50,10 @@ export default function Login() {
         <label htmlFor='password'>Password</label>
         <input type='text' name='password' onChange={(e) => setPassword(e.target.value)} />
         <button type='submit'>Submit</button>
+      </form>
+
+      <form onSubmit={(e) => logout(e)}>
+        <button type='submit'>Logout</button>
       </form>
     </div>
   )
