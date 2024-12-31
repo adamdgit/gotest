@@ -44,7 +44,10 @@ func main() {
 	app := fiber.New()
 
 	// Handle CORS
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowCredentials: true,
+		AllowOrigins:     "http://localhost:5173",
+	}))
 
 	// JWT
 	// app.Use(jwtware.New(jwtware.Config{
