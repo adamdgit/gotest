@@ -15,11 +15,26 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
+// JSON format from login body request
+type RegisterJSON struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func Register(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Get form data
-		username := c.FormValue("username")
-		password := c.FormValue("password")
+		var req RegisterJSON
+
+		// Parse body JSON and extract username, password
+		err := c.BodyParser(&req)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body",
+			})
+		}
+
+		username := req.Username
+		password := req.Password
 
 		// Check if user exists already. before creating
 		stmt := "SELECT username FROM users WHERE username = ?"
@@ -29,7 +44,7 @@ func Register(db *sql.DB) fiber.Handler {
 
 		// If ErrNoRows returns then no user exists and we can continue
 		// else we need to return conflict error status
-		err := rowUserExists.Scan(&user.Username)
+		err = rowUserExists.Scan(&user.Username)
 		if err != sql.ErrNoRows {
 			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
