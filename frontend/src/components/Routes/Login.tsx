@@ -35,8 +35,7 @@ export default function Login() {
     })
 
     if (res.ok) {
-      const data = await res.json();
-      console.log(data)
+      console.log(res.status)
     }
   }
 
