@@ -28,9 +28,10 @@ func main() {
 	address := os.Getenv("DB_ADDRESS")
 	dbname := os.Getenv("DB_NAME")
 
-	// Initialise MySQL connection string
+	// Init MySQL connection string
 	conn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true", username, password, address, dbname)
 
+	// Init db with config
 	db, err := sql.Open("mysql", conn)
 	if err != nil {
 		log.Fatal(err)
@@ -40,19 +41,14 @@ func main() {
 	db.SetMaxIdleConns(10)
 	defer db.Close()
 
-	// Initialise Fiber
+	// Init Fiber app
 	app := fiber.New()
 
-	// Handle CORS
+	// Setup CORS config
 	app.Use(cors.New(cors.Config{
 		AllowCredentials: true,
 		AllowOrigins:     "http://localhost:5173",
 	}))
-
-	// JWT
-	// app.Use(jwtware.New(jwtware.Config{
-	// 	SigningKey: jwtware.SigningKey{Key: []byte("secret")},
-	// }))
 
 	// Setup all API routes
 	routes.RegisterAPIRoutes(app, db)
@@ -62,5 +58,4 @@ func main() {
 
 	// Listen on port
 	log.Fatal(app.Listen(PORT))
-	log.Printf("Listening on %s", PORT)
 }
