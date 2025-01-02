@@ -1,35 +1,31 @@
 import { useEffect, useState } from 'react'
-
-type Post = {
-  id: number,
-  title: string,
-  content: string,
-  created_at: number,
-  updated_at: number
-}
+import type { Error, Post } from '../types/types';
 
 export default function PostsList() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error>({isError: false, message: ""});
   const [data, setData] = useState<Post[] | []>([]);
 
   const fetchPosts = async () => {
     setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('http://localhost:8081/api/v1/posts', {
-        credentials: "include"
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+    setError({isError: false, message: ""});
+    setTimeout(async () => {
+      try {
+        const res = await fetch('http://localhost:8081/api/v1/posts', {
+          credentials: "include"
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const result = await res.json();
+        setData(result);
+      } catch (err) {
+        console.log(err)
+        setError({isError: true, message: "Error fetching posts"});
+      } finally {
+        setLoading(false);
       }
-      const result = await res.json();
-      setData(result);
-    } catch (err) {
-      setError((err as Error).message || 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
+    }, 1000)
   };
 
   useEffect(() => {
@@ -40,8 +36,8 @@ export default function PostsList() {
     <p>Fetching posts...</p>
   )
 
-  if (error) return (
-    <p>Something went wrong</p>
+  if (error.isError) return (
+    <p>{error.message}</p>
   )
 
   return (
