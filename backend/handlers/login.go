@@ -13,11 +13,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CheckPasswordHash(password string, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
-
 // JSON format from login body request
 type LoginJSON struct {
 	Username string `json:"username"`
@@ -62,37 +57,61 @@ func Login(db *sql.DB) fiber.Handler {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
 
-		// Create the Claims
-		claims := jwt.MapClaims{
+		// Create access token claims
+		accessTokenClaims := jwt.MapClaims{
 			"ID":       user.ID,
 			"username": username,
 			"admin":    false,
 			"exp":      time.Now().Add(time.Hour * 12).Unix(),
 		}
 
-		// Create token
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-		// Generate encoded token and send it as response.
-		t, err := token.SignedString([]byte("secret"))
+		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
+		accessTokenString, err := accessToken.SignedString([]byte("secret"))
 		if err != nil {
 			logging.UpdateLogFile(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		// Set the token in an HTTP-only cookie
+		// Create refresh token claims
+		refreshTokenClaims := jwt.MapClaims{
+			"ID":  user.ID,
+			"exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
+		}
+
+		refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
+		refreshTokenString, err := refreshToken.SignedString([]byte("refresh_secret"))
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		// Set access token in an HTTP-only cookie
 		c.Cookie(&fiber.Cookie{
 			Name:     "auth_token",
-			Value:    t,
+			Value:    accessTokenString,
 			HTTPOnly: true,
 			// Secure:   true, // Ensure this is true in production (HTTPS)
 			SameSite: "Strict",
 			Path:     "/",
-			Expires:  time.Now().Add(time.Hour * 12),
+			Expires:  time.Now().Add(15 * time.Minute),
+		})
+		// Set refresh token in HTTP-only cookie
+		c.Cookie(&fiber.Cookie{
+			Name:     "refresh_token",
+			Value:    refreshTokenString,
+			HTTPOnly: true,
+			// Secure:   true,
+			SameSite: "Strict",
+			Path:     "/",
+			Expires:  time.Now().Add(7 * 24 * time.Hour),
 		})
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Logged in successfully",
 		})
 	}
+}
+
+func CheckPasswordHash(password string, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
