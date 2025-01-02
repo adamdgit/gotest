@@ -25,13 +25,15 @@ export default function Login() {
     }
   }
 
-
   async function logout(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const res = await fetch('http://localhost:8081/api/auth/logout', {
       method: "POST",
       credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
     })
 
     if (res.ok) {
