@@ -25,7 +25,7 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
 
 	// Login, Logout, Register
 	app.Post("/api/auth/login", handlers.Login(db))
-	app.Post("/api/auth/logout", authRequired, handlers.Logout) // clears http cookie, no db required
+	app.Post("/api/auth/logout", handlers.Logout) // clears http cookie, no db required
 	app.Post("/api/auth/register", handlers.Register(db))
 
 	// JWT refresh token endpoint
