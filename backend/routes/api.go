@@ -20,12 +20,15 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
 	authRequired := middleware.NewAuthMiddleware("secret")
 
 	// NOTE: Add authRequired to routes that need auth protection
-	app.Get("/api/v1/posts", handlers.GetAllPosts(db))
+	app.Get("/api/v1/posts", authRequired, handlers.GetAllPosts(db))
 	app.Get("/api/v1/posts/:id", handlers.GetPostById(db))
 
 	// Login, Logout, Register
 	app.Post("/api/auth/login", handlers.Login(db))
 	app.Post("/api/auth/logout", authRequired, handlers.Logout) // clears http cookie, no db required
 	app.Post("/api/auth/register", handlers.Register(db))
+
+	// JWT refresh token endpoint
+	app.Post("/api/auth/refresh", authRequired, handlers.RefreshToken)
 
 }
