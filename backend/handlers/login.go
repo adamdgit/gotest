@@ -62,7 +62,7 @@ func Login(db *sql.DB) fiber.Handler {
 			"ID":       user.ID,
 			"username": username,
 			"admin":    false,
-			"exp":      time.Now().Add(time.Hour * 12).Unix(),
+			"exp":      time.Now().Add(15 * time.Minute).Unix(),
 		}
 
 		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
@@ -94,6 +94,7 @@ func Login(db *sql.DB) fiber.Handler {
 			Path:     "/",
 			Expires:  time.Now().Add(15 * time.Minute),
 		})
+
 		// Set refresh token in HTTP-only cookie
 		c.Cookie(&fiber.Cookie{
 			Name:     "refresh_token",
