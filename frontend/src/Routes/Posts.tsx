@@ -1,4 +1,4 @@
-import PostsList from "../PostsList"
+import PostsList from "../components/PostsList"
 
 export default function Posts() {
 

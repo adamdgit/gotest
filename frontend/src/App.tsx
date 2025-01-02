@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from './components/Routes/Login';
+import Login from './Routes/Login';
 import Navbar from './components/Navbar';
 import React from "react";
-import Posts from "./components/Routes/Posts";
-import Register from "./components/Routes/Register";
-import Home from "./components/Routes/Home";
+import Posts from "./Routes/Posts";
+import Register from "./Routes/Register";
+import Home from "./Routes/Home";
 
 function App() {
 
