@@ -1,29 +1,29 @@
 package handlers
 
 import (
-	"time"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
 // Deletes http-only cookie
-func Logout(c *fiber.Ctx) error {
-	c.Cookie(&fiber.Cookie{
-		Name:     "auth_token",
-		Value:    "",
-		HTTPOnly: true,
-		Secure:   true,
-		Expires:  time.Now().Add(-time.Hour),
-	})
+func Logout(store *session.Store) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Create session cookie
+		session, err := store.Get(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "Error creating session",
+			})
+		}
 
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    "",
-		HTTPOnly: true,
-		Secure:   true,
-		Expires:  time.Now().Add(-time.Hour),
-	})
+		// Destroy session
+		if err := session.Destroy(); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Error logging out",
+			})
+		}
 
-	return c.SendStatus(fiber.StatusOK)
+		return c.SendStatus(fiber.StatusOK)
+	}
 }
