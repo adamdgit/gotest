@@ -3,13 +3,11 @@ package handlers
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/adamdgit/gotest/backend/models"
-	logging "github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,7 +17,7 @@ type LoginJSON struct {
 	Password string `json:"password"`
 }
 
-func Login(db *sql.DB) fiber.Handler {
+func Login(db *sql.DB, store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req LoginJSON
 
@@ -57,54 +55,19 @@ func Login(db *sql.DB) fiber.Handler {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
 
-		// Create access token claims
-		accessTokenClaims := jwt.MapClaims{
-			"ID":       user.ID,
-			"username": username,
-			"admin":    false,
-			"exp":      time.Now().Add(15 * time.Minute).Unix(),
+		// Create session cookie
+		session, err := store.Get(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "Error creating session",
+			})
 		}
 
-		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
-		accessTokenString, err := accessToken.SignedString([]byte("secret"))
-		if err != nil {
-			logging.UpdateLogFile(err)
+		session.Set("id", user.ID)
+		session.Set("username", user.Username)
+		if err := session.Save(); err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
-
-		// Create refresh token claims
-		refreshTokenClaims := jwt.MapClaims{
-			"ID":  user.ID,
-			"exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
-		}
-
-		refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
-		refreshTokenString, err := refreshToken.SignedString([]byte("refresh_secret"))
-		if err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-
-		// Set access token in an HTTP-only cookie
-		c.Cookie(&fiber.Cookie{
-			Name:     "auth_token",
-			Value:    accessTokenString,
-			HTTPOnly: true,
-			// Secure:   true, // Ensure this is true in production (HTTPS)
-			SameSite: "Strict",
-			Path:     "/",
-			Expires:  time.Now().Add(15 * time.Minute),
-		})
-
-		// Set refresh token in HTTP-only cookie
-		c.Cookie(&fiber.Cookie{
-			Name:     "refresh_token",
-			Value:    refreshTokenString,
-			HTTPOnly: true,
-			// Secure:   true,
-			SameSite: "Strict",
-			Path:     "/",
-			Expires:  time.Now().Add(7 * 24 * time.Hour),
-		})
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Logged in successfully",
