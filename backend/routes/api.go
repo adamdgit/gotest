@@ -6,29 +6,17 @@ import (
 	"github.com/adamdgit/gotest/backend/handlers"
 	"github.com/adamdgit/gotest/backend/middleware"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
-func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
-	// Load JWT secret from .env
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatalf("Error loading .env file")
-	// }
-
-	// secret := os.Getenv("JWT_SECRET")
-	// TODO update "secret" to proper jwt secret from .env
-	authRequired := middleware.NewAuthMiddleware("secret")
-
-	// NOTE: Add authRequired to routes that need auth protection
-	app.Get("/api/v1/posts", authRequired, handlers.GetAllPosts(db))
+func RegisterAPIRoutes(app *fiber.App, db *sql.DB, store *session.Store) {
+	// NOTE: Protect routes by adding auth middleware:
+	// middleware.AuthMiddleware(store)
+	app.Get("/api/v1/posts", middleware.AuthMiddleware(store), handlers.GetAllPosts(db))
 	app.Get("/api/v1/posts/:id", handlers.GetPostById(db))
 
 	// Login, Logout, Register
-	app.Post("/api/auth/login", handlers.Login(db))
-	app.Post("/api/auth/logout", handlers.Logout) // clears http cookie, no db required
+	app.Post("/api/auth/login", handlers.Login(db, store))
+	app.Post("/api/auth/logout", handlers.Logout(store))
 	app.Post("/api/auth/register", handlers.Register(db))
-
-	// JWT refresh token endpoint
-	app.Post("/api/auth/refresh", authRequired, handlers.RefreshToken)
-
 }
