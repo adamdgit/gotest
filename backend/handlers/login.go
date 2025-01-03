@@ -50,7 +50,6 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 		// Check password matches the hash
 		hash := user.Password
 		match := CheckPasswordHash(password, hash)
-
 		if !match {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
@@ -63,10 +62,13 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 			})
 		}
 
+		// Set session id and username
 		session.Set("id", user.ID)
 		session.Set("username", user.Username)
 		if err := session.Save(); err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "Error creating session",
+			})
 		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{

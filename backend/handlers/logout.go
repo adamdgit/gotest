@@ -9,12 +9,10 @@ import (
 // Deletes http-only cookie
 func Logout(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Create session cookie
+		// Retrieve session cookie if it exists
 		session, err := store.Get(c)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Error creating session",
-			})
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
 		// Destroy session

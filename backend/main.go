@@ -46,7 +46,7 @@ func main() {
 	// Init Fiber app
 	app := fiber.New()
 
-	// Create a new session store
+	// Create a new session store using MySQL storage
 	storage := mysqlStorage.New(mysqlStorage.Config{
 		Host:       "127.0.0.1",
 		Port:       3306,
@@ -57,7 +57,7 @@ func main() {
 		GCInterval: 10 * time.Minute,
 	})
 
-	// Create a session store using MySQL storage
+	// Save session store with default config
 	store := session.New(session.Config{
 		Storage: storage,
 	})

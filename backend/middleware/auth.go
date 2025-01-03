@@ -8,7 +8,7 @@ import (
 // Checks users session cookie for protecting routes
 func AuthMiddleware(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Retrieve the session
+		// Retrieve the session, handles expired sessions automatically
 		session, err := store.Get(c)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
