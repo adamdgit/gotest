@@ -11,6 +11,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/session"
+	mysqlStorage "github.com/gofiber/storage/mysql"
 	"github.com/joho/godotenv"
 )
 
@@ -44,6 +46,22 @@ func main() {
 	// Init Fiber app
 	app := fiber.New()
 
+	// Create a new session store
+	storage := mysqlStorage.New(mysqlStorage.Config{
+		Host:       "127.0.0.1",
+		Port:       3306,
+		Username:   username,
+		Password:   password,
+		Database:   dbname,
+		Table:      "sessions",
+		GCInterval: 10 * time.Minute,
+	})
+
+	// Create a session store using MySQL storage
+	store := session.New(session.Config{
+		Storage: storage,
+	})
+
 	// Setup CORS config
 	app.Use(cors.New(cors.Config{
 		AllowCredentials: true,
@@ -51,7 +69,7 @@ func main() {
 	}))
 
 	// Setup all API routes
-	routes.RegisterAPIRoutes(app, db)
+	routes.RegisterAPIRoutes(app, db, store)
 
 	// Handle static folder
 	app.Static("/", "./public")
