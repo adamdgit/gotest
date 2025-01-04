@@ -39,8 +39,6 @@ func main() {
 		log.Fatal(err)
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
 	defer db.Close()
 
 	// Init Fiber app
