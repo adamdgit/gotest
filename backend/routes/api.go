@@ -10,9 +10,10 @@ import (
 )
 
 func RegisterAPIRoutes(app *fiber.App, db *sql.DB, store *session.Store) {
-	// NOTE: Protect routes by adding auth middleware:
-	// middleware.AuthMiddleware(store)
-	app.Get("/api/v1/posts", middleware.AuthMiddleware(store), handlers.GetAllPosts(db))
+	// NOTE: Protect routes by adding AuthLoggedIn or AuthIsAdmin
+	// AuthLoggedIn, users must be logged in to access API
+	// AuthIsAdmin, users must have admin role to access API
+	app.Get("/api/v1/posts", middleware.AuthIsAdmin(store), handlers.GetAllPosts(db))
 	app.Get("/api/v1/posts/:id", handlers.GetPostById(db))
 
 	// Login, Logout, Register
