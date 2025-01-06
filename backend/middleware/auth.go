@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
-// Checks users session cookie for protecting routes
+// Checks User is logged in, for protected routes
 func AuthLoggedIn(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Retrieve the session, handles expired sessions automatically
@@ -27,20 +27,30 @@ func AuthLoggedIn(store *session.Store) fiber.Handler {
 	}
 }
 
-// Checks users session cookie for protecting routes
+// Checks User is admin role for protected routes
 func AuthIsAdmin(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Retrieve the session, handles expired sessions automatically
+		// Retrieve the session, if none exist, return error
+		cookie := c.Cookies("session_id")
+		if cookie == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized: missing session",
+			})
+		}
+
+		// Retrieve the session if it exists
 		session, err := store.Get(c)
 		if err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Invalid session",
+			})
 		}
 
 		// Check if user is logged in (e.g., session contains a user ID)
 		role := session.Get("role").(models.UserRole)
 		if models.UserRole(role) != models.Admin {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Unauthorized for this route",
+				"error": "Unauthorized for this route",
 			})
 		}
 
