@@ -15,7 +15,7 @@ import (
 
 // JSON format from login body request
 type LoginJSON struct {
-	Username string `json:"username"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -23,7 +23,7 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req LoginJSON
 
-		// Parse body JSON and extract username, password
+		// Parse body JSON and extract email, password
 		err := c.BodyParser(&req)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -31,18 +31,18 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 			})
 		}
 
-		username := req.Username
+		email := req.Email
 		password := req.Password
 
-		// Get username and password from DB
-		stmt := "SELECT ID, username, password, role FROM users WHERE username = ?"
-		row := db.QueryRowContext(context.Background(), stmt, username)
+		// Get email and password from DB
+		stmt := "SELECT ID, email, password, role FROM users WHERE email = ?"
+		row := db.QueryRowContext(context.Background(), stmt, email)
 
 		var user models.User
 
 		// If ErrNoRows user has provided invalid login details
 		// else we need to check password is valid
-		err = row.Scan(&user.ID, &user.Username, &user.Password, &user.Role)
+		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role)
 		if err == sql.ErrNoRows {
 			log.Printf("---error: %s", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -71,9 +71,9 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 		// FIX: gob encoder error when reading models.UserRole
 		gob.Register(models.UserRole(""))
 
-		// Set session id and username
+		// Set session id and email
 		session.Set("id", user.ID)
-		session.Set("username", user.Username)
+		session.Set("email", user.Email)
 		session.Set("role", user.Role)
 		if err := session.Save(); err != nil {
 			log.Printf("---error: %s", err)
