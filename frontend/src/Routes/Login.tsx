@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react'
 
 export default function Login() {
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
 
   async function login(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -10,7 +10,7 @@ export default function Login() {
     const res = await fetch('http://localhost:8081/api/auth/login', {
       method: "POST",
       body: JSON.stringify({
-        "username": username,
+        "email": email,
         "password": password
       }),
       credentials: "include",
@@ -46,10 +46,10 @@ export default function Login() {
     <div>
       <h2>Login</h2>
       <form onSubmit={(e) => login(e)}>
-        <label htmlFor='username'>Username</label>
-        <input type='text' name='username' onChange={(e) => setUsername(e.target.value)} />
+        <label htmlFor='email'>Email</label>
+        <input type='email' name='email' onChange={(e) => setEmail(e.target.value)} />
         <label htmlFor='password'>Password</label>
-        <input type='text' name='password' onChange={(e) => setPassword(e.target.value)} />
+        <input type='password' name='password' onChange={(e) => setPassword(e.target.value)} />
         <button type='submit'>Submit</button>
       </form>
 
