@@ -17,7 +17,7 @@ func HashPassword(password string) (string, error) {
 
 // JSON format from login body request
 type RegisterJSON struct {
-	Username string `json:"username"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -25,7 +25,7 @@ func Register(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req RegisterJSON
 
-		// Parse body JSON and extract username, password
+		// Parse body JSON and extract email, password
 		err := c.BodyParser(&req)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -33,34 +33,34 @@ func Register(db *sql.DB) fiber.Handler {
 			})
 		}
 
-		username := req.Username
+		email := req.Email
 		password := req.Password
 
 		// Check if user exists already. before creating
-		stmt := "SELECT username FROM users WHERE username = ?"
-		rowUserExists := db.QueryRowContext(context.Background(), stmt, username)
+		stmt := "SELECT email FROM users WHERE email = ?"
+		rowUserExists := db.QueryRowContext(context.Background(), stmt, email)
 
 		var user models.User
 
 		// If ErrNoRows returns then no user exists and we can continue
 		// else we need to return conflict error status
-		err = rowUserExists.Scan(&user.Username)
+		err = rowUserExists.Scan(&user.Email)
 		if err != sql.ErrNoRows {
 			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"message": "Username already exists",
+				"message": "Email already in use",
 			})
 		}
 
-		// Hash password before inserting to db if username is available
+		// Hash password before inserting to db if email is available
 		hash, err := HashPassword(password)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
 		// Insert new user into DB
-		stmt = "INSERT INTO users (username, password) VALUES (?, ?)"
-		row, err := db.Query(stmt, username, hash)
+		stmt = "INSERT INTO users (email, password) VALUES (?, ?)"
+		row, err := db.Query(stmt, email, hash)
 		if err != nil {
 			log.Printf("Error: %s", err)
 			return c.SendStatus(fiber.StatusInternalServerError)
