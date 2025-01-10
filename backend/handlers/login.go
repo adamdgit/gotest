@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"database/sql"
-	"encoding/gob"
 	"log"
 
 	"github.com/adamdgit/gotest/backend/models"
@@ -68,9 +67,6 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 			})
 		}
 
-		// FIX: gob encoder error when reading models.UserRole
-		gob.Register(models.UserRole(""))
-
 		// Set session id and email
 		session.Set("id", user.ID)
 		session.Set("email", user.Email)
@@ -84,6 +80,7 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Logged in successfully",
+			"data":    fiber.Map{"email": user.Email, "role": user.Role},
 		})
 	}
 }

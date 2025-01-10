@@ -2,11 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
+	"github.com/adamdgit/gotest/backend/models"
 	"github.com/adamdgit/gotest/backend/routes"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
@@ -57,7 +59,9 @@ func main() {
 
 	// Save session store with default config
 	store := session.New(session.Config{
-		Storage: storage,
+		CookieHTTPOnly: true,
+		Storage:        storage,
+		Expiration:     12 * time.Hour,
 	})
 
 	// Setup CORS config
@@ -65,6 +69,9 @@ func main() {
 		AllowCredentials: true,
 		AllowOrigins:     "http://localhost:5173",
 	}))
+
+	// FIX: gob encoder error when reading models.UserRole
+	gob.Register(models.UserRole(""))
 
 	// Setup all API routes
 	routes.RegisterAPIRoutes(app, db, store)

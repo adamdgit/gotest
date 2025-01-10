@@ -20,4 +20,7 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB, store *session.Store) {
 	app.Post("/api/auth/login", handlers.Login(db, store))
 	app.Post("/api/auth/logout", handlers.Logout(store))
 	app.Post("/api/auth/register", handlers.Register(db))
+
+	// Validate users session after login, before redirect to main app
+	app.Post("/api/auth/getUser", handlers.GetUser(store))
 }
