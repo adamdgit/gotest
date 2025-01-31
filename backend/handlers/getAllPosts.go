@@ -11,7 +11,7 @@ import (
 // get all posts
 func GetAllPosts(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		stmt := "SELECT * FROM posts"
+		stmt := "SELECT * FROM posts LIMIT 10"
 
 		rows, err := db.Query(stmt)
 		if err != nil {
