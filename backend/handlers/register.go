@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/adamdgit/gotest/backend/models"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -40,11 +39,9 @@ func Register(db *sql.DB) fiber.Handler {
 		stmt := "SELECT email FROM users WHERE email = ?"
 		rowUserExists := db.QueryRowContext(context.Background(), stmt, email)
 
-		var user models.User
-
 		// If ErrNoRows returns then no user exists and we can continue
 		// else we need to return conflict error status
-		err = rowUserExists.Scan(&user.Email)
+		err = rowUserExists.Scan(email)
 		if err != sql.ErrNoRows {
 			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
