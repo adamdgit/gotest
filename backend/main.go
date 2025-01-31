@@ -13,6 +13,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	mysqlStorage "github.com/gofiber/storage/mysql"
 	"github.com/joho/godotenv"
@@ -21,7 +22,7 @@ import (
 const PORT = ":8081"
 
 func main() {
-	// Load .env file
+	// Load .env db info
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file")
@@ -32,7 +33,7 @@ func main() {
 	address := os.Getenv("DB_ADDRESS")
 	dbname := os.Getenv("DB_NAME")
 
-	// Init MySQL connection string
+	// Create MySQL connection string
 	conn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true", username, password, address, dbname)
 
 	// Init db with config
@@ -60,11 +61,14 @@ func main() {
 	// Save session store with default config
 	store := session.New(session.Config{
 		CookieHTTPOnly: true,
+		CookieSecure:   false, // true in PROD
+		CookieSameSite: "Lax",
 		Storage:        storage,
 		Expiration:     12 * time.Hour,
 	})
 
-	// Setup CORS config
+	app.Use(csrf.New(csrf.ConfigDefault))
+
 	app.Use(cors.New(cors.Config{
 		AllowCredentials: true,
 		AllowOrigins:     "http://localhost:5173",
@@ -76,9 +80,7 @@ func main() {
 	// Setup all API routes
 	routes.RegisterAPIRoutes(app, db, store)
 
-	// Handle static folder
 	app.Static("/", "./public")
 
-	// Listen on port
 	log.Fatal(app.Listen(PORT))
 }
