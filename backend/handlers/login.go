@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"strconv"
 
 	"github.com/adamdgit/gotest/backend/models"
 	_ "github.com/go-sql-driver/mysql"
@@ -34,14 +35,14 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 		password := req.Password
 
 		// Get email and password from DB
-		stmt := "SELECT ID, email, password, role FROM users WHERE email = ?"
+		stmt := "SELECT ID, email, password FROM users WHERE email = ?"
 		row := db.QueryRowContext(context.Background(), stmt, email)
 
 		var user models.User
 
 		// If ErrNoRows user has provided invalid login details
 		// else we need to check password is valid
-		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role)
+		err = row.Scan(&user.ID, &user.Email, &user.Password)
 		if err == sql.ErrNoRows {
 			log.Printf("---error: %s", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -67,20 +68,29 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 			})
 		}
 
-		// Set session id and email
-		session.Set("id", user.ID)
-		session.Set("email", user.Email)
-		session.Set("role", user.Role)
+		// store userID in session, used for validating user in other routes
+		session.Set("user_id", strconv.Itoa(user.ID))
+
+		var session_id = session.ID()
+
 		if err := session.Save(); err != nil {
-			log.Printf("---error: %s", err)
+			log.Printf("Error saving session: %v", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Error creating session",
+				"error": "Error creating session",
+			})
+		}
+
+		// Set session id in users db
+		_, err = db.Exec("UPDATE users SET session_id = ? WHERE id = ?", session_id, user.ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Error creating session",
 			})
 		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Logged in successfully",
-			"data":    fiber.Map{"email": user.Email, "role": user.Role},
+			"data":    fiber.Map{"email": user.Email, "session_id": session_id},
 		})
 	}
 }
