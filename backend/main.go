@@ -13,7 +13,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	mysqlStorage "github.com/gofiber/storage/mysql"
 	"github.com/joho/godotenv"
@@ -62,12 +61,12 @@ func main() {
 	store := session.New(session.Config{
 		CookieHTTPOnly: true,
 		CookieSecure:   false, // true in PROD
-		CookieSameSite: "Lax",
+		CookieSameSite: "None",
 		Storage:        storage,
 		Expiration:     12 * time.Hour,
 	})
 
-	app.Use(csrf.New(csrf.ConfigDefault))
+	// app.Use(csrf.New(csrf.ConfigDefault))
 
 	app.Use(cors.New(cors.Config{
 		AllowCredentials: true,
