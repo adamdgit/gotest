@@ -15,52 +15,52 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>();
 
 export function AuthProvider(props) {
-  const [userData, setUserData] = createStore<UserData>({email: null, profile_url: null})
+    const [userData, setUserData] = createStore<UserData>({email: null, profile_url: null})
 
-  async function signIn(email: string, password: string) {    
-    const res = await fetch("http://127.0.0.1:8081/api/auth/login", {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            "content-type": "application/json"
-        }, 
-        body: JSON.stringify({
-            "email": email,
-            "password": password,
-        })
-    });
+    async function signIn(email: string, password: string) {    
+        const res = await fetch("http://127.0.0.1:8081/api/auth/login", {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                "content-type": "application/json"
+            }, 
+            body: JSON.stringify({
+                "email": email,
+                "password": password,
+            })
+        });
 
-    if (res.ok) {
-        const data = await res.json();
-        console.log("res data:",data)
-        setUserData({ email: data.email, profile_url: data.profile_url })
-        return true
-    } else {
-        console.log("Error:", res.status, res.statusText);
-        setUserData({email: null, profile_url: null})
-        return false
+        if (res.ok) {
+            const data = await res.json();
+            console.log("res data:",data)
+            setUserData({ email: data.email, profile_url: data.profile_url })
+            return true
+        } else {
+            console.log("Error:", res.status, res.statusText);
+            setUserData({email: null, profile_url: null})
+            return false
+        }
     }
-  }
 
-  async function signOut() {
-    const res = await fetch("http://127.0.0.1:8081/api/auth/logout", {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            "content-type": "application/json",
-        }, 
-    });
+    async function signOut() {
+        const res = await fetch("http://127.0.0.1:8081/api/auth/logout", {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                "content-type": "application/json",
+            }, 
+        });
 
-    if (res.ok) {
-        setUserData({email: null, profile_url: null});
-        return true
-    } 
-    // handle error
-    else {
-        console.log("Error", res.status, res.statusText);
-        return false
+        if (res.ok) {
+            setUserData({email: null, profile_url: null});
+            return true
+        } 
+        // handle error
+        else {
+            console.log("Error", res.status, res.statusText);
+            return false
+        }
     }
-  }
 
   return (
     <AuthContext.Provider value={{ userData, signIn, signOut }}>
