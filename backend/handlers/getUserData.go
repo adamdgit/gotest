@@ -25,7 +25,7 @@ func GetUserData(db *sql.DB, store *session.Store) fiber.Handler {
 
 		// Get ID from cookie
 		session_id := session.ID()
-		user_id := session.Get("user_id")
+		user_id, _ := session.Get("user_id").(string)
 
 		var user models.User
 
@@ -36,7 +36,7 @@ func GetUserData(db *sql.DB, store *session.Store) fiber.Handler {
 		err = row.Scan(&user.Email, &user.Role, &user.Firstname, &user.Lastname)
 		if err == sql.ErrNoRows {
 			log.Printf("error4")
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Couldn't retrieve user data",
 			})
 		}
