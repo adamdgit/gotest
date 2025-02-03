@@ -9,9 +9,9 @@ import (
 )
 
 // get all posts
-func GetAllPosts(db *sql.DB) fiber.Handler {
+func GetProductList(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		stmt := "SELECT * FROM posts LIMIT 10"
+		stmt := "SELECT * FROM products LIMIT 20"
 
 		rows, err := db.Query(stmt)
 		if err != nil {
@@ -22,21 +22,21 @@ func GetAllPosts(db *sql.DB) fiber.Handler {
 		}
 		defer rows.Close()
 
-		var posts []models.Post
+		var products []models.Products
 
 		for rows.Next() {
-			var post models.Post
+			var product models.Products
 
-			err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Created_At, &post.Updated_At)
+			err := rows.Scan(&product.ID, &product.Name, &product.Brand, &product.Description, &product.Price, &product.Created_At, &product.Updated_At)
 			if err != nil {
 				log.Printf("Error: %s", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 					"error": "Error retrieving from database",
 				})
 			}
-			posts = append(posts, post)
+			products = append(products, product)
 		}
 
-		return c.JSON(posts)
+		return c.JSON(products)
 	}
 }

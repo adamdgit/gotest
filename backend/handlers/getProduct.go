@@ -9,11 +9,11 @@ import (
 )
 
 // Get post by provided id
-func GetPostById(db *sql.DB) fiber.Handler {
+func GetProduct(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
-		stmt := "SELECT * FROM posts WHERE post.id = ?"
+		stmt := "SELECT * FROM products WHERE products.id = ?"
 
 		row, err := db.Query(stmt, id)
 		if err != nil {
@@ -24,9 +24,9 @@ func GetPostById(db *sql.DB) fiber.Handler {
 		}
 		defer row.Close()
 
-		var post models.Post
+		var product models.Products
 
-		err = row.Scan(&post.ID, &post.Title, &post.Content, &post.Created_At, &post.Updated_At)
+		err = row.Scan(&product.ID, &product.Name, &product.Brand, &product.Description, &product.Price, &product.Created_At, &product.Updated_At)
 		if err != nil {
 			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -34,6 +34,6 @@ func GetPostById(db *sql.DB) fiber.Handler {
 			})
 		}
 
-		return c.JSON(post)
+		return c.JSON(product)
 	}
 }
