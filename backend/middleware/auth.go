@@ -19,7 +19,7 @@ func AuthLoggedIn(store *session.Store) fiber.Handler {
 		}
 
 		// Check if user is logged in (e.g., session contains a user ID)
-		userID := session.Get("id")
+		userID := session.Get("user_id")
 		if userID == nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "You must be logged in to access this route",
@@ -41,8 +41,6 @@ func AuthIsAdmin(db *sql.DB, store *session.Store) fiber.Handler {
 			})
 		}
 
-		session_id := session.ID()
-
 		// Get ID from cookie
 		id, ok := session.Get("user_id").(string)
 		if !ok {
@@ -52,8 +50,8 @@ func AuthIsAdmin(db *sql.DB, store *session.Store) fiber.Handler {
 		}
 
 		// Check database for user role
-		stmt := "SELECT role FROM users WHERE id = ? AND session_id = ?"
-		row := db.QueryRowContext(context.Background(), stmt, id, session_id)
+		stmt := "SELECT role FROM users WHERE id = ?"
+		row := db.QueryRowContext(context.Background(), stmt, id)
 
 		var role models.UserRole
 
