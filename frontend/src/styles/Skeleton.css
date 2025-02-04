@@ -1,0 +1,23 @@
+.skeleton-list {
+    padding-top: 1rem;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.skeleton-list li {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px 0 #ddd;
+    padding: 1rem;
+    width: 100%;
+    height: 200px;
+    animation: loading infinite reverse both 1.6s;
+}
+
+@keyframes loading {
+    0%      { opacity: 1; }
+    50%     { opacity: 0; }
+    100%    { opacity: 1; }
+}
