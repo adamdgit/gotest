@@ -13,7 +13,7 @@ func GetProduct(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
-		stmt := "SELECT * FROM products WHERE products.id = ?"
+		stmt := "SELECT * FROM products WHERE id = ?"
 
 		row, err := db.Query(stmt, id)
 		if err != nil {
