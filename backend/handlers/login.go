@@ -31,14 +31,14 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 		password := req.Password
 
 		// Get email and password from DB
-		stmt := "SELECT ID, email, password, profile_url FROM users WHERE email = ?"
+		stmt := "SELECT ID, email, password, role, profile_url FROM users WHERE email = ?"
 		row := db.QueryRowContext(context.Background(), stmt, email)
 
 		var user models.User
 
 		// If ErrNoRows user has provided invalid login details
 		// else we need to check password is valid
-		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Profile_URL)
+		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.Profile_URL)
 		utils.HandleError(c, err, "invalid login credentials")
 
 		// Check password matches the hash
@@ -56,19 +56,16 @@ func Login(db *sql.DB, store *session.Store) fiber.Handler {
 
 		// store userID in session, used for validating user in other routes
 		session.Set("user_id", strconv.Itoa(user.ID))
-		var session_id = session.ID()
 
 		err = session.Save()
 		utils.HandleError(c, err, "Error creating session")
 
-		// Set session id in users db
-		_, err = db.Exec("UPDATE users SET session_id = ? WHERE id = ?", session_id, user.ID)
-		utils.HandleError(c, err, "Error creating session")
-
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"message":     "Logged in successfully",
-			"email":       user.Email,
-			"profile_url": user.Profile_URL,
+			"user": fiber.Map{
+				"email":       user.Email,
+				"role":        user.Role,
+				"profile_url": user.Profile_URL,
+			},
 		})
 	}
 }
