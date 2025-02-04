@@ -24,16 +24,15 @@ func GetUserData(db *sql.DB, store *session.Store) fiber.Handler {
 		}
 
 		// Get ID from cookie
-		session_id := session.ID()
 		user_id, _ := session.Get("user_id").(string)
 
 		var user models.User
 
 		// Check database for user data
-		stmt := "SELECT email, role, firstname, lastname FROM users WHERE session_id = ? AND id = ?"
+		stmt := "SELECT email, role, profile_url FROM users WHERE id = ?"
 
-		row := db.QueryRowContext(context.Background(), stmt, session_id, user_id)
-		err = row.Scan(&user.Email, &user.Role, &user.Firstname, &user.Lastname)
+		row := db.QueryRowContext(context.Background(), stmt, user_id)
+		err = row.Scan(&user.Email, &user.Role, &user.Profile_URL)
 		if err == sql.ErrNoRows {
 			log.Printf("error4")
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -43,7 +42,11 @@ func GetUserData(db *sql.DB, store *session.Store) fiber.Handler {
 
 		// Success, return data as json
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"user": fiber.Map{"email": user.Email, "role": user.Role},
+			"user": fiber.Map{
+				"email":       user.Email,
+				"role":        user.Role,
+				"profile_url": user.Profile_URL,
+			},
 		})
 	}
 }
