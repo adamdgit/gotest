@@ -1,9 +1,15 @@
+import { useNavigate } from "@solidjs/router";
 import { useAuth } from "../AuthProvider"
 
 export default function Header(props) {
-
+    const navigate = useNavigate();
     const { userData } = useAuth();
 
+    // Redirect non logged in users to login page
+    if (!userData.email) {
+      navigate("/");
+    }
+  
     return (
       <>
           <header>
@@ -12,6 +18,7 @@ export default function Header(props) {
               <>
                 <nav class="nabvar">
                     <ul class="navlist">
+                        <li><a href="/home">Home</a></li>
                         <li><a href="#">Admin</a></li>
                         <li><a href="#">Forms</a></li>
                         <li><a href="#">Staff</a></li>
