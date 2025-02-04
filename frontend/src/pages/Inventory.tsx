@@ -1,7 +1,8 @@
-import { createSignal, onMount } from "solid-js";
+import { createSignal, Match, onMount, Show, Suspense, Switch } from "solid-js";
 import { useAuth } from "../AuthProvider";
 import { For } from "solid-js";
 import "../styles/Products.css";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 type Product = {
     id: number,
@@ -27,30 +28,41 @@ export default function Inventory() {
             credentials: 'include',
             headers: {
                 "content-type": "application/json"
-            },
+            }, 
         });
 
         if (res.ok) {
             const data = await res.json();
             setProducts(data);
             setLoading(false);
+
+            // const content = document.querySelector('main');
+            // if (content) {
+            //     content.innerHTML = data;
+            // }
         }
         else {
             setError(true);
             setProducts([]);
             setLoading(false);
         }
-    })
+    });
 
     return (
         <main>
             <h1>Product Inventory</h1>
-            {error() ? <p style={{color: 'red'}}>Something went wrong</p> : null}
-            {loading() ? (
-                <div>Loading data...</div>
-            ) : (
-                <ul class="products-list">
-                    <For each={products()}>
+            <Show when={error()}>
+                <p style={{color: 'red'}}>Something went wrong</p> 
+            </Show>
+
+            <Switch>
+                <Match when={loading()}>
+                    <SkeletonLoader items={15}/>
+                </Match>
+
+                <Match when={!loading()}>
+                    <ul class="products-list">
+                        <For each={products()}>
                         {product => (
                             <li>
                                 <a href={`/product/${product.id}`}>
@@ -61,9 +73,10 @@ export default function Inventory() {
                                 </a>
                             </li>
                         )}
-                    </For>
-                </ul>
-            )}
+                        </For>
+                    </ul>
+                </Match>
+            </Switch>
         </main>
     )
 }
