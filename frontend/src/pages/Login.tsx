@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js'
+import { createEffect, createSignal } from 'solid-js'
 import "../styles/Login.css"
 import { useNavigate } from '@solidjs/router';
 import { useAuth } from '../AuthProvider';
@@ -8,7 +8,15 @@ export default function Login() {
   const [email, setEmail] = createSignal("");
   const [password, setPassword] = createSignal("");
   const [error, setError] = createSignal("");
-  const { signIn } = useAuth();
+  const { userData, signIn } = useAuth();
+
+  // Listen for userData update from useAuth on refresh
+  // Redirect already logged in user to home page
+  createEffect(() => {
+    if (userData.email) {
+      navigate("/home");
+    }
+  })
 
   async function handleLogin(e: Event) {
     e.preventDefault();
@@ -42,7 +50,10 @@ export default function Login() {
             onchange={(e) => setPassword(e.target.value)}
           />
         </div>
-
+        <div>
+          Don't have an account? 
+          <a href='/register'>Register account</a>
+        </div>
         <button onclick={(e) => handleLogin(e)}>Login</button>
       </form>
     </main>
