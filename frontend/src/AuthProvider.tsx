@@ -1,9 +1,10 @@
-import { createContext, useContext } from "solid-js";
+import { createContext, onMount, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 
 export type UserData = {
-    email?:       string | null,
-    profile_url?: string | null
+    email:       string | null,
+    role:        string | null,
+    profile_url: string | null
 }
 
 export interface AuthContextType {
@@ -15,7 +16,27 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>();
 
 export function AuthProvider(props) {
-    const [userData, setUserData] = createStore<UserData>({email: null, profile_url: null})
+    const [userData, setUserData] = createStore<UserData>({
+        email: null, role: null, profile_url: null
+    })
+
+    onMount(async () => {
+        const res = await fetch("http://127.0.0.1:8081/api/auth/getUser", {
+            method: "GET",
+            credentials: "include", // Ensure cookies are sent
+            headers: { 
+                "content-type": "application/json" 
+            }
+        });
+
+        if (res.ok) {
+            const { user } = await res.json();
+            setUserData({ email: user.email, role: user.role, profile_url: user.profile_url })
+        } else {
+            setUserData({email: null, role: null, profile_url: null})
+        }
+        console.log(userData.email)
+    });
 
     async function signIn(email: string, password: string) {    
         const res = await fetch("http://127.0.0.1:8081/api/auth/login", {
@@ -31,16 +52,16 @@ export function AuthProvider(props) {
         });
 
         if (res.ok) {
-            const data = await res.json();
-            console.log("res data:",data)
-            setUserData({ email: data.email, profile_url: data.profile_url })
+            const { user } = await res.json();
+            console.log("res data:",user)
+            setUserData({ email: user.email, role: user.role, profile_url: user.profile_url })
             return true
         } else {
             console.log("Error:", res.status, res.statusText);
-            setUserData({email: null, profile_url: null})
+            setUserData({email: null, role: null, profile_url: null})
             return false
         }
-    }
+    };
 
     async function signOut() {
         const res = await fetch("http://127.0.0.1:8081/api/auth/logout", {
@@ -60,7 +81,7 @@ export function AuthProvider(props) {
             console.log("Error", res.status, res.statusText);
             return false
         }
-    }
+    };
 
   return (
     <AuthContext.Provider value={{ userData, signIn, signOut }}>
