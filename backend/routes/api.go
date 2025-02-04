@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/adamdgit/gotest/backend/handlers"
+	"github.com/adamdgit/gotest/backend/middleware"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
@@ -14,6 +15,7 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB, store *session.Store) {
 	// AuthIsAdmin, users must have admin role to access API
 	app.Get("/api/v1/products", handlers.GetProductList(db))
 	app.Get("/api/v1/product/:id", handlers.GetProduct(db))
+	app.Put("/api/v1/product/:id", middleware.AuthIsAdmin(db, store), handlers.UpdateProduct(db))
 
 	// Login, Logout, Register
 	app.Post("/api/auth/login", handlers.Login(db, store))
