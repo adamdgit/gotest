@@ -37,6 +37,9 @@ func GetProductList(db *sql.DB) fiber.Handler {
 			products = append(products, product)
 		}
 
+		// return c.Render("test", fiber.Map{
+		// 	"products": products,
+		// })
 		return c.JSON(products)
 	}
 }
