@@ -15,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	mysqlStorage "github.com/gofiber/storage/mysql"
+	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -43,8 +44,12 @@ func main() {
 	db.SetConnMaxLifetime(time.Minute * 3)
 	defer db.Close()
 
+	engine := html.New("./templates", ".html")
+
 	// Init Fiber app
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		Views: engine,
+	})
 
 	// Create a new session store using MySQL storage
 	storage := mysqlStorage.New(mysqlStorage.Config{
