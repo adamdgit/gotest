@@ -5,27 +5,22 @@ import (
 	"database/sql"
 
 	"github.com/adamdgit/gotest/backend/models"
+	"github.com/adamdgit/gotest/backend/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
-// Checks User is logged in, for protected routes
-func AuthLoggedIn(store *session.Store) fiber.Handler {
+// Check session expiration
+func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Retrieve the session, handles expired sessions automatically
-		session, err := store.Get(c)
+		// Validates access token, or generates a new one
+		err := utils.ValidateAccessToken(c, db)
 		if err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-
-		// Check if user is logged in (e.g., session contains a user ID)
-		userID := session.Get("user_id")
-		if userID == nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "You must be logged in to access this route",
+				"error": "Invalid Session",
 			})
 		}
-
+		// Session is valid continue
 		return c.Next()
 	}
 }
@@ -73,13 +68,3 @@ func AuthIsAdmin(db *sql.DB, store *session.Store) fiber.Handler {
 		return c.Next()
 	}
 }
-
-// Reusable error handling function
-// func HandleError(err error, message string, statusCode int, c *fiber.Ctx) error {
-// 	if err != nil {
-// 		return c.Status(statusCode).JSON(fiber.Map{
-// 			"error": message,
-// 		})
-// 	}
-// 	return nil
-// }

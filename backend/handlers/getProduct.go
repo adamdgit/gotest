@@ -24,7 +24,7 @@ func GetProduct(db *sql.DB) fiber.Handler {
 		}
 		defer row.Close()
 
-		var product models.Products
+		var product models.Product
 
 		err = row.Scan(&product.ID, &product.Name, &product.Brand, &product.Description, &product.Price, &product.Created_At, &product.Updated_At)
 		if err != nil {

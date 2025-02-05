@@ -14,7 +14,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/session"
-	mysqlStorage "github.com/gofiber/storage/mysql"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 )
@@ -52,23 +51,23 @@ func main() {
 	})
 
 	// Create a new session store using MySQL storage
-	storage := mysqlStorage.New(mysqlStorage.Config{
-		Host:       "127.0.0.1",
-		Port:       3306,
-		Username:   username,
-		Password:   password,
-		Database:   dbname,
-		Table:      "sessions",
-		GCInterval: 10 * time.Minute,
-	})
+	// storage := mysqlStorage.New(mysqlStorage.Config{
+	// 	Host:       "127.0.0.1",
+	// 	Port:       3306,
+	// 	Username:   username,
+	// 	Password:   password,
+	// 	Database:   dbname,
+	// 	Table:      "sessions",
+	// 	GCInterval: 10 * time.Minute,
+	// })
 
 	// Save session store with default config
 	store := session.New(session.Config{
 		CookieHTTPOnly: true,
 		CookieSecure:   false, // true in PROD
 		CookieSameSite: "None",
-		Storage:        storage,
-		Expiration:     12 * time.Hour,
+		// Storage:        storage,
+		Expiration: 12 * time.Hour,
 	})
 
 	// app.Use(csrf.New(csrf.ConfigDefault))

@@ -2,43 +2,46 @@ package handlers
 
 import (
 	"database/sql"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
 // Deletes http-only cookie
-func Logout(db *sql.DB, store *session.Store) fiber.Handler {
+func Logout(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Retrieve session cookie if it exists
-		session, err := store.Get(c)
-		if err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
+		refreshToken := c.Cookies("refresh_token")
+
+		if refreshToken == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "No session found",
+			})
 		}
 
-		user_id := session.Get("user_id")
-		// handles null types for db
-		var nullSessionID sql.NullString
-		nullSessionID.Valid = false
-
-		// Remove session from user in db
-		_, err = db.Exec("UPDATE users SET session_id = ? WHERE id = ?", nullSessionID, user_id)
+		// Delete session from db
+		_, err := db.Exec("DELETE FROM sessions WHERE refresh_token = ?", refreshToken)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Error logging out",
 			})
 		}
 
-		// Destroy session
-		if err := session.Destroy(); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Error logging out",
-			})
-		}
+		// Delete cookies on logout
+		c.Cookie(&fiber.Cookie{
+			Name:    "access_token",
+			Value:   "",
+			Expires: time.Now().Add(-time.Hour),
+		})
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"message": "Logged out successfully",
+		c.Cookie(&fiber.Cookie{
+			Name:    "refresh_token",
+			Value:   "",
+			Expires: time.Now().Add(-time.Hour),
+		})
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"meessage": "Logged out successfully",
 		})
 	}
 }

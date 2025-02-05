@@ -22,10 +22,10 @@ func GetProductList(db *sql.DB) fiber.Handler {
 		}
 		defer rows.Close()
 
-		var products []models.Products
+		var products []models.Product
 
 		for rows.Next() {
-			var product models.Products
+			var product models.Product
 
 			err := rows.Scan(&product.ID, &product.Name, &product.Brand, &product.Description, &product.Price, &product.Created_At, &product.Updated_At)
 			if err != nil {

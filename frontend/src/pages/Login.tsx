@@ -10,8 +10,7 @@ export default function Login() {
   const [error, setError] = createSignal("");
   const { userData, signIn } = useAuth();
 
-  // Listen for userData update from useAuth on refresh
-  // Redirect already logged in user to home page
+  // Redirect non logged in users to login page
   createEffect(() => {
     if (userData.email) {
       navigate("/home");
