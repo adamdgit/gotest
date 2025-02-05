@@ -11,6 +11,7 @@ import (
 // get all posts
 func GetProductList(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		log.Printf("Context PRODUCTS: %s", c)
 		stmt := "SELECT * FROM products LIMIT 20"
 
 		rows, err := db.Query(stmt)

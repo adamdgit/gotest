@@ -13,7 +13,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 )
@@ -62,13 +61,13 @@ func main() {
 	// })
 
 	// Save session store with default config
-	store := session.New(session.Config{
-		CookieHTTPOnly: true,
-		CookieSecure:   false, // true in PROD
-		CookieSameSite: "None",
-		// Storage:        storage,
-		Expiration: 12 * time.Hour,
-	})
+	// store := session.New(session.Config{
+	// 	CookieHTTPOnly: true,
+	// 	CookieSecure:   false, // true in PROD
+	// 	CookieSameSite: "None",
+	// 	// Storage:        storage,
+	// 	Expiration: 12 * time.Hour,
+	// })
 
 	// app.Use(csrf.New(csrf.ConfigDefault))
 
@@ -81,7 +80,7 @@ func main() {
 	gob.Register(models.UserRole(""))
 
 	// Setup all API routes
-	routes.RegisterAPIRoutes(app, db, store)
+	routes.RegisterAPIRoutes(app, db)
 
 	app.Static("/", "./public")
 

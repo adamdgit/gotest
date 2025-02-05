@@ -3,6 +3,7 @@ package utils
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -35,8 +36,9 @@ func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
 		}
 	}
 
+	log.Printf("all good in the hood")
 	// Session is valid
-	return c.Next()
+	return nil
 }
 
 // Access token is expired, generate new one
@@ -80,8 +82,8 @@ func RefreshAccessToken(c *fiber.Ctx, db *sql.DB, userID int, refreshToken strin
 		Name:     "access_token",
 		Value:    newSessionID,
 		HTTPOnly: true,
-		Secure:   true,
-		SameSite: "Strict",
+		Secure:   false,
+		SameSite: "None",
 		Expires:  newSessionExpiry,
 	})
 
@@ -90,8 +92,8 @@ func RefreshAccessToken(c *fiber.Ctx, db *sql.DB, userID int, refreshToken strin
 		Name:     "refresh_token",
 		Value:    newRefreshToken,
 		HTTPOnly: true,
-		Secure:   true,
-		SameSite: "Strict",
+		Secure:   false,
+		SameSite: "None",
 		Expires:  newRefreshExpiry,
 	})
 

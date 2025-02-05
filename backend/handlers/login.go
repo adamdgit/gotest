@@ -9,7 +9,6 @@ import (
 	"github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,7 +19,7 @@ type LoginJSON struct {
 	Password string `json:"password"`
 }
 
-func Login(db *sql.DB, store *session.Store) fiber.Handler {
+func Login(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req LoginJSON
 
