@@ -9,15 +9,17 @@ import (
 )
 
 func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
-	// NOTE: Protect routes by adding AuthLoggedIn or AuthIsAdmin
-	// AuthLoggedIn, users must be logged in to access API
-	// AuthIsAdmin, users must have admin role to access API
-
-	app.Get("/api/v1/products", middleware.AuthSessionIsValid(db), handlers.GetProductList(db))
+	// Get all Products
+	app.Get("/api/v1/products",
+		middleware.AuthSessionIsValid(db),
+		handlers.GetProductList(db),
+	)
+	// Get product info by ID
 	app.Get("/api/v1/product/:id",
 		middleware.AuthSessionIsValid(db),
 		handlers.GetProduct(db),
 	)
+	// Update product by ID
 	app.Put("/api/v1/product/:id",
 		middleware.AuthIsAdmin(db),
 		handlers.UpdateProduct(db),
@@ -28,6 +30,9 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
 	app.Get("/api/auth/logout", handlers.Logout(db))
 	app.Post("/api/auth/register", handlers.Register(db))
 
-	// Validate users session after login, before redirect to main app
-	app.Get("/api/auth/getUser", handlers.GetUserData(db))
+	// Gets current users data
+	app.Get("/api/auth/getUser",
+		middleware.AuthSessionIsValid(db),
+		handlers.GetUserData(db),
+	)
 }
