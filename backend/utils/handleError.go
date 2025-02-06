@@ -14,19 +14,14 @@ func HandleError(c *fiber.Ctx, err error, message string) error {
 
 	// Check for specific error types
 	switch err {
-	case nil:
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": message,
-		})
-
 	case sql.ErrNoRows:
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": message,
+			"error": "No results found",
 		})
 
 	default:
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Something went wrong",
+			"error": message,
 		})
 	}
 }
