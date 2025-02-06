@@ -11,8 +11,9 @@ import (
 
 func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
 	sessionID := c.Cookies("access_token")
+	refreshID := c.Cookies("refresh_token")
 
-	if sessionID == "" {
+	if sessionID == "" || refreshID == "" {
 		return errors.New("invalid session token")
 	}
 
@@ -24,13 +25,13 @@ func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
 	err := db.QueryRow("SELECT user_id, session_expires, refresh_token, refresh_expires FROM sessions WHERE session_id = ?", sessionID).
 		Scan(&userID, &sessionExpiry, &refreshToken, &refreshExpiry)
 	if err == sql.ErrNoRows {
-		// Must destroy session if no results, incase of hackers
-		// Valid users will always have a access/refresh pair
-		err := DestroySession(c, db, refreshToken)
-		if err != nil {
-			return err
-		}
 		return err
+	}
+
+	// For extra security, we check refresh token is also valid
+	// otherwise we could have an attacker guessing session tokens
+	if refreshToken != refreshID {
+		return errors.New("invalid session token")
 	}
 
 	// if expired but row exists, check if refresh is possible
@@ -47,17 +48,6 @@ func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
 
 // Access token is expired, generate new one
 func RefreshAccessToken(c *fiber.Ctx, db *sql.DB, userID int, refreshToken string, refreshExpiry time.Time) error {
-	userRefreshToken := c.Cookies("refresh_token")
-
-	if userRefreshToken != refreshToken || userRefreshToken == "" {
-		// if refresh is invalid we must destroy the session for security purposes
-		err := DestroySession(c, db, refreshToken)
-		if err != nil {
-			return err
-		}
-		return errors.New("invalid session token")
-	}
-
 	if time.Now().After(refreshExpiry) {
 		// if refresh is expired we must destroy the session for security purposes
 		err := DestroySession(c, db, refreshToken)
