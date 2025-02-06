@@ -1,8 +1,28 @@
+import { useNavigate } from "@solidjs/router";
 import { useAuth } from "../AuthProvider"
-import { Show } from "solid-js";
+import { onMount, Show } from "solid-js";
 
 export default function Header(props) {
-    const { userData } = useAuth();
+    const { userData, validateUser, signOut } = useAuth();
+    const navigate = useNavigate()
+
+    onMount(async () => {
+      const isLoggedIn = await validateUser();
+
+      if (!isLoggedIn) {
+        navigate("/")
+      } 
+    })
+
+    async function handleLogout() {  
+      const res = await signOut();
+  
+      if (res) {
+        navigate("/");
+      } else {
+        console.log("Error logging out")
+      }
+    }
   
     return (
       <>
@@ -21,7 +41,7 @@ export default function Header(props) {
             </nav>
             <div class="profilewrapper">
               {userData?.email}
-              <button class='btn'>Logout</button>
+              <button class='btn' onclick={() => handleLogout()}>Logout</button>
             </div>
           </>
         </Show>
