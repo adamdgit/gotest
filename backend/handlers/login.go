@@ -3,10 +3,10 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/adamdgit/gotest/backend/models"
-	"github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -25,34 +25,48 @@ func Login(db *sql.DB) fiber.Handler {
 
 		// Parse body JSON and extract email, password
 		err := c.BodyParser(&req)
-		utils.HandleError(c, err, "invalid request body")
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body",
+			})
+		}
 
 		email := req.Email
 		password := req.Password
 
 		// Get email and password from DB
-		stmt := "SELECT ID, email, password, role, profile_url FROM users WHERE email = ?"
-		row := db.QueryRowContext(context.Background(), stmt, email)
+		row := db.QueryRowContext(context.Background(),
+			"SELECT ID, email, password, role, profile_url FROM users WHERE email = ?",
+			email)
 
 		var user models.User
 
 		// If ErrNoRows user has provided invalid login details
 		// else we need to check password is valid
 		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.Profile_URL)
-		utils.HandleError(c, err, "invalid login credentials")
+		if err == sql.ErrNoRows {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Invalid login details",
+			})
+		}
 
 		// Check password matches the hash
 		hash := user.Password
 		match := CheckPasswordHash(password, hash)
 		if !match {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid Login Credentials",
+				"error": "Invalid login details",
 			})
 		}
 
-		_, err = db.Exec("UPDATE users SET last_login = ? WHERE user_id = ?",
+		_, err = db.Exec("UPDATE users SET last_login = ? WHERE id = ?",
 			time.Now(), user.ID)
-		utils.HandleError(c, err, "Error updating database")
+		if err != nil {
+			log.Printf("Login err? %s", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Error connecting to server",
+			})
+		}
 
 		ip_address := c.IP()
 		user_agent := c.Get("User-Agent")
@@ -67,7 +81,11 @@ func Login(db *sql.DB) fiber.Handler {
 		// Insert session data to database
 		_, err = db.Exec("INSERT INTO sessions (session_id, user_id, refresh_token, session_expires, refresh_expires, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			sessionID, user.ID, refreshToken, sessionExpiry, refreshExpiry, ip_address, user_agent)
-		utils.HandleError(c, err, "Failed to create session")
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Error connecting to server",
+			})
+		}
 
 		// Set Access Token
 		c.Cookie(&fiber.Cookie{
