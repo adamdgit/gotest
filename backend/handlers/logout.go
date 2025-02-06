@@ -29,18 +29,24 @@ func Logout(db *sql.DB) fiber.Handler {
 
 		// Delete cookies on logout
 		c.Cookie(&fiber.Cookie{
-			Name:    "access_token",
-			Value:   "",
-			Expires: time.Now().Add(-time.Hour),
+			Name:     "access_token",
+			Value:    "",
+			HTTPOnly: true,
+			Secure:   false,
+			SameSite: "None",
+			Expires:  time.Unix(0, 0),
 		})
 
 		c.Cookie(&fiber.Cookie{
-			Name:    "refresh_token",
-			Value:   "",
-			Expires: time.Now().Add(-time.Hour),
+			Name:     "refresh_token",
+			Value:    "",
+			HTTPOnly: true,
+			Secure:   false,
+			SameSite: "None",
+			Expires:  time.Unix(0, 0),
 		})
 
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"meessage": "Logged out successfully",
 		})
 	}
