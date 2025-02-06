@@ -1,4 +1,4 @@
-import { createContext, onMount, useContext } from "solid-js";
+import { createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 
 export type UserData = {
@@ -8,9 +8,10 @@ export type UserData = {
 }
 
 export interface AuthContextType {
-    userData:   UserData;
-    signIn:     (email: string, password: string) => Promise<boolean>;
-    signOut:    () => Promise<boolean>;
+    userData:       UserData;
+    validateUser:   () => Promise<boolean>
+    signIn:         (email: string, password: string) => Promise<boolean>;
+    signOut:        () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType>();
@@ -20,7 +21,7 @@ export function AuthProvider(props) {
         email: null, role: null, profile_url: null
     })
 
-    onMount(async () => {
+    async function validateUser() { 
         const res = await fetch("http://127.0.0.1:8081/api/auth/getUser", {
             method: "GET",
             credentials: "include", // Ensure cookies are sent
@@ -32,11 +33,13 @@ export function AuthProvider(props) {
         if (res.ok) {
             const { user } = await res.json();
             setUserData({ email: user.email, role: user.role, profile_url: user.profile_url })
+            return true
         } else {
+            console.log("not ok")
             setUserData({email: null, role: null, profile_url: null})
+            return false
         }
-        console.log(userData.email)
-    });
+    };
 
     async function signIn(email: string, password: string) {    
         const res = await fetch("http://127.0.0.1:8081/api/auth/login", {
@@ -84,7 +87,7 @@ export function AuthProvider(props) {
     };
 
   return (
-    <AuthContext.Provider value={{ userData, signIn, signOut }}>
+    <AuthContext.Provider value={{ userData, validateUser, signIn, signOut }}>
       {props.children}
     </AuthContext.Provider>
   );
