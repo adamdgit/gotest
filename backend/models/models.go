@@ -14,17 +14,19 @@ const (
 )
 
 type User struct {
-	ID          int       `json:"id"`
-	Email       string    `json:"email"`
-	Password    string    `json:"password"`
-	Firstname   string    `json:"firstname"`
-	Lastname    string    `json:"lastname"`
-	Phone       string    `json:"phone"` // format: +61 000 000 000
-	Role        UserRole  `json:"role"`
-	Profile_URL string    `json:"profile_url"` // profile picture url to file
-	Last_Login  time.Time `json:"last_login"`
-	Created_At  time.Time `json:"created_at"`
-	Updated_At  time.Time `json:"updated_at"`
+	ID          int      `json:"id"`
+	Email       string   `json:"email"`
+	Password    string   `json:"password"`
+	Firstname   string   `json:"firstname"`
+	Lastname    string   `json:"lastname"`
+	Phone       string   `json:"phone"` // format: +61 000 000 000
+	Role        UserRole `json:"role"`
+	Profile_URL string   `json:"profile_url"` // profile picture url to file
+	// TwoFac_Email string    `json:"twofac_email"`
+	// TwoFac_Phone string    `json:"twofac_phone"`
+	Last_Login time.Time `json:"last_login"`
+	Created_At time.Time `json:"created_at"`
+	Updated_At time.Time `json:"updated_at"`
 }
 
 // Inventory products
@@ -48,6 +50,6 @@ type Session struct {
 	Refresh_Expires string    `json:"refresh_expires"`
 	IP_Address      string    `json:"ip_address"`
 	User_Agent      string    `json:"user_agent"`
-	Created_At      time.Time `json:"created_at"`
-	Updated_At      time.Time `json:"updated_at"`
+	Created_At      time.Time `json:"created_at"` // Initial login date
+	Updated_At      time.Time `json:"updated_at"` // most recent session refresh
 }
