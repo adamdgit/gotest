@@ -24,6 +24,12 @@ func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
 	err := db.QueryRow("SELECT user_id, session_expires, refresh_token, refresh_expires FROM sessions WHERE session_id = ?", sessionID).
 		Scan(&userID, &sessionExpiry, &refreshToken, &refreshExpiry)
 	if err == sql.ErrNoRows {
+		// Must destroy session if no results, incase of hackers
+		// Valid users will always have a access/refresh pair
+		err := DestroySession(c, db, refreshToken)
+		if err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -106,15 +112,21 @@ func DestroySession(c *fiber.Ctx, db *sql.DB, refreshToken string) error {
 	}
 
 	c.Cookie(&fiber.Cookie{
-		Name:    "access_token",
-		Value:   "",
-		Expires: time.Now().Add(-time.Hour),
+		Name:     "access_token",
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   false,
+		SameSite: "None",
+		Expires:  time.Unix(0, 0),
 	})
 
 	c.Cookie(&fiber.Cookie{
-		Name:    "refresh_token",
-		Value:   "",
-		Expires: time.Now().Add(-time.Hour),
+		Name:     "refresh_token",
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   false,
+		SameSite: "None",
+		Expires:  time.Unix(0, 0),
 	})
 
 	return nil
