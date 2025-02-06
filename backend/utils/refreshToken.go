@@ -3,7 +3,6 @@ package utils
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -36,7 +35,6 @@ func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
 		}
 	}
 
-	log.Printf("all good in the hood")
 	// Session is valid
 	return nil
 }
