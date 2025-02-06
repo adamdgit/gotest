@@ -50,6 +50,13 @@ func Login(db *sql.DB) fiber.Handler {
 			})
 		}
 
+		_, err = db.Exec("UPDATE users SET last_login = ? WHERE user_id = ?",
+			time.Now(), user.ID)
+		utils.HandleError(c, err, "Error updating database")
+
+		ip_address := c.IP()
+		user_agent := c.Get("User-Agent")
+
 		// Generate session and refresh token
 		sessionID := uuid.New().String()
 		sessionExpiry := time.Now().Add(15 * time.Minute)
@@ -58,8 +65,8 @@ func Login(db *sql.DB) fiber.Handler {
 		refreshExpiry := time.Now().Add(7 * 24 * time.Hour)
 
 		// Insert session data to database
-		_, err = db.Exec("INSERT INTO sessions (session_id, user_id, refresh_token, session_expires, refresh_expires) VALUES (?, ?, ?, ?, ?)",
-			sessionID, user.ID, refreshToken, sessionExpiry, refreshExpiry)
+		_, err = db.Exec("INSERT INTO sessions (session_id, user_id, refresh_token, session_expires, refresh_expires, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			sessionID, user.ID, refreshToken, sessionExpiry, refreshExpiry, ip_address, user_agent)
 		utils.HandleError(c, err, "Failed to create session")
 
 		// Set Access Token
