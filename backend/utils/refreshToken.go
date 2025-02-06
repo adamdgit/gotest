@@ -54,7 +54,7 @@ func RefreshAccessToken(c *fiber.Ctx, db *sql.DB, refreshToken string, refreshEx
 		if err != nil {
 			return err
 		}
-		return errors.New("invalid session token, please log in again")
+		return errors.New("expired session, please log in again")
 	}
 
 	// Generate new session
@@ -68,7 +68,7 @@ func RefreshAccessToken(c *fiber.Ctx, db *sql.DB, refreshToken string, refreshEx
 	_, err := db.Exec("UPDATE sessions SET session_id = ?, session_expires = ?, refresh_token = ?, refresh_expires = ?, WHERE refresh_token = ?",
 		newSessionID, newSessionExpiry, newRefreshToken, newRefreshExpiry, refreshToken)
 	if err != nil {
-		return errors.New("error updating session")
+		return errors.New("error refreshing session")
 	}
 
 	// Set new access token
@@ -101,6 +101,7 @@ func DestroySession(c *fiber.Ctx, db *sql.DB, refreshToken string) error {
 		return errors.New("error deleting session")
 	}
 
+	// expire cookies
 	c.Cookie(&fiber.Cookie{
 		Name:     "access_token",
 		Value:    "",

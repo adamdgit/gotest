@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/adamdgit/gotest/backend/models"
@@ -52,8 +51,8 @@ func Login(db *sql.DB) fiber.Handler {
 
 		// Check password matches the hash
 		hash := user.Password
-		match := CheckPasswordHash(password, hash)
-		if !match {
+		ok := CheckPasswordHash(password, hash)
+		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid login details",
 			})
@@ -62,7 +61,6 @@ func Login(db *sql.DB) fiber.Handler {
 		_, err = db.Exec("UPDATE users SET last_login = ? WHERE id = ?",
 			time.Now(), user.ID)
 		if err != nil {
-			log.Printf("Login err? %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Error connecting to server",
 			})
