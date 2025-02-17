@@ -76,7 +76,7 @@ export function AuthProvider(props) {
         });
 
         if (res.ok) {
-            setUserData({email: null, profile_url: null});
+            setUserData({ email: null, profile_url: null });
             return true
         } 
         // handle error
