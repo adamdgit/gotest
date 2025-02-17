@@ -1,0 +1,40 @@
+.category-list {
+    list-style: none;
+    display: grid;
+    gap: 1rem;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 12px 0 #ddd;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    width: fit-content;
+}
+
+.category-list li {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 1rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.db-form {
+    display: flex;
+    gap: .7rem;
+    justify-content: center;
+    align-items: center;
+    width: fit-content;
+    padding: 2rem 0;
+}
+
+.db-form input {
+    border: 1px solid #ccc;
+    padding: .7rem 1rem;
+    border-radius: 4px;
+}
+
+.db-form button {
+    width: fit-content;
+    padding: .6rem 1rem;
+    background-color: #333;
+    color: white;
+    border-radius: 4px;
+}
