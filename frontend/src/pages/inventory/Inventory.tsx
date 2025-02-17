@@ -1,7 +1,7 @@
 import { createSignal, Show } from "solid-js";
 import { useAuth } from "../../AuthProvider";
 import { Product } from "../../types/types";
-import CategoryList from "./CategorySelect";
+import CategoryList from "./CategoryList";
 import "../../styles/Products.css";
 
 export default function Inventory() {
