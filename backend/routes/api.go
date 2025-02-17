@@ -25,6 +25,22 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
 		handlers.UpdateProduct(db),
 	)
 
+	// Get all categories
+	app.Get("/api/v1/categories",
+		middleware.AuthSessionIsValid(db),
+		handlers.GetCategories(db),
+	)
+	// Add new categories
+	app.Put("/api/v1/categories",
+		middleware.AuthSessionIsValid(db),
+		handlers.AddNewCategory(db),
+	)
+	// Get products for selected category
+	app.Get("/api/v1/products/:categoryid",
+		middleware.AuthSessionIsValid(db),
+		handlers.GetProductsByCategory(db),
+	)
+
 	// Login, Logout, Register
 	app.Post("/api/auth/login", handlers.Login(db))
 	app.Get("/api/auth/logout", handlers.Logout(db))
