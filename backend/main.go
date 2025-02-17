@@ -10,11 +10,13 @@ import (
 
 	"github.com/adamdgit/gotest/backend/models"
 	"github.com/adamdgit/gotest/backend/routes"
+	"github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
+	"github.com/robfig/cron/v3"
 )
 
 const PORT = ":8081"
@@ -75,6 +77,11 @@ func main() {
 		AllowCredentials: true,
 		AllowOrigins:     "http://localhost:5173",
 	}))
+
+	// Run daily cron to cleanup expired sessions
+	cronJob := cron.New()
+	cronJob.AddFunc("0 0 * * *", func() { utils.CleanupExpiredSessions(db) })
+	cronJob.Start()
 
 	// FIX: gob encoder error when reading models.UserRole
 	gob.Register(models.UserRole(""))
