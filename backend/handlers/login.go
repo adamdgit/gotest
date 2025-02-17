@@ -13,14 +13,14 @@ import (
 )
 
 // JSON format from login body request
-type LoginJSON struct {
+type LoginReq struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 func Login(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var req LoginJSON
+		var req LoginReq
 
 		// Parse body JSON and extract email, password
 		err := c.BodyParser(&req)
@@ -66,8 +66,9 @@ func Login(db *sql.DB) fiber.Handler {
 			})
 		}
 
+		// TODO consider unique device_id checks
+
 		ip_address := c.IP()
-		user_agent := c.Get("User-Agent")
 
 		// Generate session and refresh token
 		sessionID := uuid.New().String()
@@ -77,8 +78,8 @@ func Login(db *sql.DB) fiber.Handler {
 		refreshExpiry := time.Now().Add(7 * 24 * time.Hour)
 
 		// Insert session data to database
-		_, err = db.Exec("INSERT INTO sessions (session_id, user_id, refresh_token, session_expires, refresh_expires, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			sessionID, user.ID, refreshToken, sessionExpiry, refreshExpiry, ip_address, user_agent)
+		_, err = db.Exec("INSERT INTO sessions (session_id, user_id, refresh_token, session_expires, refresh_expires, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+			sessionID, user.ID, refreshToken, sessionExpiry, refreshExpiry, ip_address)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Error connecting to server",
