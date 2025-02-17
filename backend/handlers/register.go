@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -15,14 +14,14 @@ func HashPassword(password string) (string, error) {
 }
 
 // JSON format from login body request
-type RegisterJSON struct {
+type RegisterReq struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 func Register(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var req RegisterJSON
+		var req RegisterReq
 
 		// Parse body JSON and extract email, password
 		err := c.BodyParser(&req)
@@ -36,14 +35,13 @@ func Register(db *sql.DB) fiber.Handler {
 		password := req.Password
 
 		// Check if user exists already. before creating
-		stmt := "SELECT email FROM users WHERE email = ?"
-		rowUserExists := db.QueryRowContext(context.Background(), stmt, email)
+		rowUserExists := db.QueryRowContext(context.Background(),
+			"SELECT email FROM users WHERE email = ?", email)
 
 		// If ErrNoRows returns then no user exists and we can continue
 		// else we need to return conflict error status
 		err = rowUserExists.Scan(email)
 		if err != sql.ErrNoRows {
-			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"message": "Email already in use",
 			})
@@ -56,10 +54,9 @@ func Register(db *sql.DB) fiber.Handler {
 		}
 
 		// Insert new user into DB
-		stmt = "INSERT INTO users (email, password) VALUES (?, ?)"
-		row, err := db.Query(stmt, email, hash)
+		row, err := db.Query("INSERT INTO users (email, password) VALUES (?, ?)",
+			email, hash)
 		if err != nil {
-			log.Printf("Error: %s", err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		defer row.Close()
