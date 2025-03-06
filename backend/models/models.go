@@ -34,10 +34,10 @@ type User struct {
 // Valid Session stores
 type Session struct {
 	ID              int       `json:"id"`
-	Session_ID      string    `json:"session_id"`
 	User_ID         int       `json:"user_id"`
+	Access_Token    string    `json:"session_id"`
 	Refresh_Token   string    `json:"refresh_token"`
-	Session_Expires string    `json:"session_expires"`
+	Access_Expires  string    `json:"session_expires"`
 	Refresh_Expires string    `json:"refresh_expires"`
 	IP_Address      string    `json:"ip_address"`
 	Created_At      time.Time `json:"created_at"` // Initial login date
