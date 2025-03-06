@@ -1,19 +1,34 @@
+.category-wrap {
+    background: white;
+    padding: 2rem;
+    border: 1px solid #ccc;
+}
+
 .category-list {
     list-style: none;
     display: grid;
     gap: 1rem;
     border: 1px solid #ddd;
-    box-shadow: 0 4px 12px 0 #ddd;
+    box-shadow: 0 4px 12px 0 #ededed;
     padding: 1.5rem;
     margin-top: 1rem;
-    width: fit-content;
+    max-width: 800px;
 }
 
 .category-list li {
+    height: 40px;
     display: grid;
-    grid-template-columns: 150px 1fr;
+    grid-template-columns: minmax(100px, 200px) 1fr 50px 60px;
     gap: 1rem;
+    align-items: center;
     border-bottom: 1px solid #ddd;
+}
+
+.category-list li button {
+    height: 25px;
+    background-color: #333;
+    color: white;
+    border-radius: 4px;
 }
 
 .db-form {

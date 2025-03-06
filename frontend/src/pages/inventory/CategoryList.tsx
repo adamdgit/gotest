@@ -1,13 +1,16 @@
 import { createSignal, For, onMount } from "solid-js";
-import { Category } from "../../types/types";
+import { Category, ErrorObject } from "../../types/types";
+import SuccessPopup from "../../components/SuccessPopup";
 import  "../../styles/category.css"
 
 export default function CategoryList() {
-    const [catname, setCatname] = createSignal("")
-    const [catDesc, setCatDesc] = createSignal("")
+    const [catname, setCatname] = createSignal("");
+    const [catDesc, setCatDesc] = createSignal("");
     const [categories, setCategories] = createSignal<Category[]>([]);
-    
-    // get categories on mount
+    const [errorObj, setErrorObj] = createSignal<ErrorObject>({ error: null, message: null });
+    const [message, setMessage] = createSignal("");
+    const [showPopup, setShowPopup] = createSignal(false);
+
     onMount(async () => {
         const res = await fetch('http://127.0.0.1:8081/api/v1/categories', {
             method: 'GET',
@@ -16,13 +19,12 @@ export default function CategoryList() {
                 "content-type": "application/json"
             }
         });
-
+    
         if (res.ok) {
             const data = await res.json() as Category[];
             setCategories(data);
-            console.log(data)
         } else {
-            console.log(res.status, res.statusText)
+            setErrorObj({ error: res.status, message: res.statusText })
         }
     })
 
@@ -42,14 +44,22 @@ export default function CategoryList() {
         });
 
         if (res.ok) {
-
+            const newCat = {id: 0, name: catname(), description: catDesc()} as Category
+            setCategories(prev => [...prev, newCat]);
+            setMessage("New category added");
+            setShowPopup(true);
         } else {
-
+            setErrorObj({ error: res.status, message: res.statusText })
         }
     }
 
   return (
-    <>
+    <div class="category-wrap">
+        <SuccessPopup 
+            message={message} 
+            showPopup={showPopup} 
+            setShowPopup={setShowPopup}
+        />
         <h2>Add new category</h2>
         <form class="db-form">
             <label for="categoryName">Name</label>
@@ -76,10 +86,12 @@ export default function CategoryList() {
                     <li value={category.id}>
                         <div>{category.name}</div>
                         <div>{category.description}</div>
+                        <button>Edit</button>
+                        <button>Delete</button>
                     </li>
                 )}
             </For>
         </ul>
-    </>
+    </div>
   )
 }
