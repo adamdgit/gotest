@@ -67,19 +67,18 @@ func Login(db *sql.DB) fiber.Handler {
 		}
 
 		// TODO consider unique device_id checks
-
 		ip_address := c.IP()
 
 		// Generate session and refresh token
-		sessionID := uuid.New().String()
-		sessionExpiry := time.Now().Add(15 * time.Minute)
+		access_token := uuid.New().String()
+		accessExpiry := time.Now().Add(15 * time.Minute)
 
-		refreshToken := uuid.New().String()
+		refresh_token := uuid.New().String()
 		refreshExpiry := time.Now().Add(7 * 24 * time.Hour)
 
 		// Insert session data to database
-		_, err = db.Exec("INSERT INTO sessions (session_id, user_id, refresh_token, session_expires, refresh_expires, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
-			sessionID, user.ID, refreshToken, sessionExpiry, refreshExpiry, ip_address)
+		_, err = db.Exec("INSERT INTO sessions (user_id, access_token, refresh_token, access_expires, refresh_expires, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+			user.ID, access_token, refresh_token, accessExpiry, refreshExpiry, ip_address)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Error connecting to server",
@@ -89,17 +88,17 @@ func Login(db *sql.DB) fiber.Handler {
 		// Set Access Token
 		c.Cookie(&fiber.Cookie{
 			Name:     "access_token",
-			Value:    sessionID,
+			Value:    access_token,
 			HTTPOnly: true,
 			Secure:   false,
 			SameSite: "None",
-			Expires:  sessionExpiry,
+			Expires:  accessExpiry,
 		})
 
 		// Set Refresh Token
 		c.Cookie(&fiber.Cookie{
 			Name:     "refresh_token",
-			Value:    refreshToken,
+			Value:    refresh_token,
 			HTTPOnly: true,
 			Secure:   false,
 			SameSite: "None",
