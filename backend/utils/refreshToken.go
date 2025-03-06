@@ -3,6 +3,7 @@ package utils
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,39 +11,40 @@ import (
 )
 
 func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
-	sessionID := c.Cookies("access_token")
-	refreshID := c.Cookies("refresh_token")
+	access_token := c.Cookies("access_token")
+	refresh_token := c.Cookies("refresh_token")
 
-	if sessionID == "" || refreshID == "" {
-		return errors.New("invalid session token")
+	if refresh_token == "" {
+		return errors.New("invalid session, please log in again")
 	}
 
-	var sessionToken string
+	var newAccessToken string
 	var sessionExpiry time.Time
-	var refreshToken string
+	var newRefreshToken string
 	var refreshExpiry time.Time
 
-	err := db.QueryRow("SELECT session_expires, session_id, refresh_token, refresh_expires FROM sessions WHERE session_id = ?", sessionID).
-		Scan(&sessionExpiry, &sessionToken, &refreshToken, &refreshExpiry)
+	// query by refresh token
+	err := db.QueryRow("SELECT session_expires, access_token, refresh_token, refresh_expires FROM sessions WHERE refresh_token = ?", refresh_token).
+		Scan(&sessionExpiry, &newAccessToken, &newRefreshToken, &refreshExpiry)
 	if err == sql.ErrNoRows {
 		return err
 	}
 
 	// If access token & refresh is valid, continue
-	if sessionToken == sessionID && time.Now().Before(sessionExpiry) && refreshToken == refreshID {
+	if newAccessToken == access_token && time.Now().Before(sessionExpiry) && newRefreshToken == refresh_token {
 		return nil
 	}
 
 	// For extra security, we check refresh token is also valid
 	// otherwise we could have an attacker guessing session tokens
-	if refreshToken != refreshID {
-		UpdateLogFile("IMPORTANT! user had valid access token, but invalid refresh token.")
-		return errors.New("invalid session token")
+	if newRefreshToken != refresh_token {
+		return errors.New("invalid session, please log in again")
 	}
 
-	// if expired but session was valid token, check for refresh
-	if time.Now().After(sessionExpiry) {
-		err = RefreshAccessToken(c, db, refreshToken, refreshExpiry)
+	// if access token is expired or missing, try refresh
+	if time.Now().After(sessionExpiry) || access_token == "" {
+		log.Printf("Access expired, refreshing..")
+		err = RefreshAccessToken(c, db, newRefreshToken, refreshExpiry)
 		if err != nil {
 			return err
 		}
@@ -54,8 +56,8 @@ func ValidateAccessToken(c *fiber.Ctx, db *sql.DB) error {
 
 // Access token is expired, generate new one
 func RefreshAccessToken(c *fiber.Ctx, db *sql.DB, refreshToken string, refreshExpiry time.Time) error {
+	// if refresh is expired we must destroy the session for security purposes
 	if time.Now().After(refreshExpiry) {
-		// if refresh is expired we must destroy the session for security purposes
 		err := DestroySession(c, db, refreshToken)
 		if err != nil {
 			return err
@@ -71,7 +73,7 @@ func RefreshAccessToken(c *fiber.Ctx, db *sql.DB, refreshToken string, refreshEx
 	newRefreshExpiry := time.Now().Add(7 * 24 * time.Hour)
 
 	// update the users access tokens
-	_, err := db.Exec("UPDATE sessions SET session_id = ?, session_expires = ?, refresh_token = ?, refresh_expires = ?, WHERE refresh_token = ?",
+	_, err := db.Exec("UPDATE sessions SET access_token = ?, access_expires = ?, refresh_token = ?, refresh_expires = ?, WHERE refresh_token = ?",
 		newSessionID, newSessionExpiry, newRefreshToken, newRefreshExpiry, refreshToken)
 	if err != nil {
 		return errors.New("error refreshing session")
