@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"database/sql"
-	"log"
 
 	"github.com/adamdgit/gotest/backend/utils"
 	"github.com/gofiber/fiber/v2"
@@ -14,7 +13,6 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 		// Validates access token, or generates a new one
 		err := utils.ValidateAccessToken(c, db)
 		if err != nil {
-			log.Printf("Session Error: %s", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid Session",
 			})
