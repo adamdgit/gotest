@@ -4,3 +4,5 @@ backend.exe
 *.exe
 .env
 *.log
+
+/backend/geoip/
