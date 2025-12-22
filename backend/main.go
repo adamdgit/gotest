@@ -16,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
+	"github.com/oschwald/geoip2-golang"
 	"github.com/robfig/cron/v3"
 )
 
@@ -73,6 +74,10 @@ func main() {
 
 	// app.Use(csrf.New(csrf.ConfigDefault))
 
+	// Geolocation DB
+	geoDb, _ := geoip2.Open("./geoip/GeoLite2-City.mmdb")
+	defer geoDb.Close()
+
 	app.Use(cors.New(cors.Config{
 		AllowCredentials: true,
 		AllowOrigins:     "http://localhost:5173",
@@ -87,7 +92,7 @@ func main() {
 	gob.Register(models.UserRole(""))
 
 	// Setup all API routes
-	routes.RegisterAPIRoutes(app, db)
+	routes.RegisterAPIRoutes(app, db, geoDb)
 
 	app.Static("/", "./public")
 

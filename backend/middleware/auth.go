@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"database/sql"
+	"log"
+	"time"
 
-	"github.com/adamdgit/gotest/backend/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -11,13 +12,33 @@ import (
 func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Validates access token, or generates a new one
-		err := utils.ValidateAccessToken(c, db)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid Session",
-			})
+		access_token := c.Cookies("access_token")
+
+		if access_token == "" {
+			log.Printf("error: no access token")
+			return c.SendStatus(fiber.StatusUnauthorized)
 		}
-		// Session is valid continue
+
+		var access_expiration time.Time
+
+		// check token exists in db
+		err := db.QueryRow("SELECT access_expires FROM sessions WHERE access_token = ?", access_token).
+			Scan(&access_expiration)
+		if err == sql.ErrNoRows {
+			log.Printf("error, %s", err)
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+
+		// check token expiration
+		if time.Now().UTC().After(access_expiration) {
+			log.Printf("error: expired token %s | %s", access_expiration, access_token)
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+
+		// TODO? We can also add checks for things like IP / geolocation
+		// to further protect users.
+
+		// Session is valid
 		return c.Next()
 	}
 }

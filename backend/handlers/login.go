@@ -3,12 +3,16 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"log"
+	"net"
 	"time"
 
 	"github.com/adamdgit/gotest/backend/models"
+	"github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/oschwald/geoip2-golang"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,7 +22,7 @@ type LoginReq struct {
 	Password string `json:"password"`
 }
 
-func Login(db *sql.DB) fiber.Handler {
+func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req LoginReq
 
@@ -44,7 +48,7 @@ func Login(db *sql.DB) fiber.Handler {
 		// else we need to check password is valid
 		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.Profile_URL)
 		if err == sql.ErrNoRows {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid login details",
 			})
 		}
@@ -58,32 +62,50 @@ func Login(db *sql.DB) fiber.Handler {
 			})
 		}
 
-		_, err = db.Exec("UPDATE users SET last_login = ? WHERE id = ?",
-			time.Now(), user.ID)
+		// Get IP and Geolocation data to save in session
+		ip_address := c.IP()
+		record, err := geoDb.City(net.ParseIP(ip_address))
+
+		log.Printf("Country: %s", record.Country.IsoCode)
+
+		country := ""
 		if err != nil {
+			utils.UpdateLogFile(err)
+		} else {
+			country = record.Country.IsoCode
+		}
+
+		// TODO: Check previous login_history, if country is different
+		// we should consider sending notification/email to the user
+
+		// Insert login information to login_history table
+		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, geo_country) VALUES (?, ?, ?)",
+			user.ID, ip_address, country)
+		if err != nil {
+			log.Printf("Err 1: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Error connecting to server",
+				"error": "Internal Server Error",
 			})
 		}
 
-		// TODO consider unique device_id checks
-		ip_address := c.IP()
-
-		// Generate session and refresh token
+		// Generate session and refresh token as UTC datetime
 		access_token := uuid.New().String()
-		accessExpiry := time.Now().Add(15 * time.Minute)
+		access_expiration := time.Now().UTC().Add(1 * time.Minute)
 
 		refresh_token := uuid.New().String()
-		refreshExpiry := time.Now().Add(7 * 24 * time.Hour)
+		refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// Insert session data to database
-		_, err = db.Exec("INSERT INTO sessions (user_id, access_token, refresh_token, access_expires, refresh_expires, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
-			user.ID, access_token, refresh_token, accessExpiry, refreshExpiry, ip_address)
+		_, err = db.Exec("INSERT INTO sessions (user_id, access_token, refresh_token, access_expires, refresh_expires) VALUES (?, ?, ?, ?, ?)",
+			user.ID, access_token, refresh_token, access_expiration, refresh_expiration)
 		if err != nil {
+			log.Printf("Err 2: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Error connecting to server",
+				"error": "Internal Server Error",
 			})
 		}
+
+		// TODO: look into new partitoned attribute for cookies
 
 		// Set Access Token
 		c.Cookie(&fiber.Cookie{
@@ -91,8 +113,8 @@ func Login(db *sql.DB) fiber.Handler {
 			Value:    access_token,
 			HTTPOnly: true,
 			Secure:   false,
-			SameSite: "None",
-			Expires:  accessExpiry,
+			SameSite: "Lax",
+			Expires:  access_expiration,
 		})
 
 		// Set Refresh Token
@@ -101,16 +123,14 @@ func Login(db *sql.DB) fiber.Handler {
 			Value:    refresh_token,
 			HTTPOnly: true,
 			Secure:   false,
-			SameSite: "None",
-			Expires:  refreshExpiry,
+			SameSite: "Lax",
+			Expires:  refresh_expiration,
 		})
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"user": fiber.Map{
-				"email":       user.Email,
-				"role":        user.Role,
-				"profile_url": user.Profile_URL,
-			},
+			"email":       user.Email,
+			"role":        user.Role,
+			"profile_url": user.Profile_URL,
 		})
 	}
 }

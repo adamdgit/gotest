@@ -26,7 +26,6 @@ type User struct {
 	Profile_URL string   `json:"profile_url"` // profile picture url to file
 	// TwoFac_Email string    `json:"twofac_email"`
 	// TwoFac_Phone string    `json:"twofac_phone"`
-	Last_Login time.Time `json:"last_login"`
 	Created_At time.Time `json:"created_at"`
 	Updated_At time.Time `json:"updated_at"`
 }
@@ -39,9 +38,16 @@ type Session struct {
 	Refresh_Token   string    `json:"refresh_token"`
 	Access_Expires  string    `json:"session_expires"`
 	Refresh_Expires string    `json:"refresh_expires"`
-	IP_Address      string    `json:"ip_address"`
 	Created_At      time.Time `json:"created_at"` // Initial login date
 	Updated_At      time.Time `json:"updated_at"` // most recent session refresh
+}
+
+type Login_History struct {
+	ID          int       `json:"id"`
+	User_ID     int       `json:"user_id"`
+	IP_Address  string    `json:"ip_address"`
+	Geo_Country string    `json:"geo_country"`
+	Last_Login  time.Time `json:"last_login"`
 }
 
 // Inventory products
