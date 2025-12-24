@@ -52,7 +52,7 @@
 	}
 
 	form {
-		max-width: 400px;
+		max-width: 350px;
 		margin: 2rem auto;
 		display: flex;
 		flex-direction: column;
@@ -67,9 +67,10 @@
 		padding: .4rem .7rem;
 		border: 1px solid white;
 		border-radius: 4px;
+		border: 1px solid #ddd;
 	}
 	input:hover {
-		border: 1px solid #ccc;
+		border: 1px solid #bbb;
 	}
 
 	button {

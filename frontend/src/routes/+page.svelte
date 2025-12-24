@@ -27,5 +27,5 @@
 
 <main>
     <h1>Welcome, {$user ? $user.email : ""}</h1>
-    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Soluta excepturi animi enim magni, odio ipsam error aliquam natus nostrum, iste autem, nulla ipsa velit! Voluptatem ea iure officiis nesciunt officia.</p>
 </main>
