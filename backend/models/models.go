@@ -38,16 +38,18 @@ type Session struct {
 	Refresh_Token   string    `json:"refresh_token"`
 	Access_Expires  string    `json:"session_expires"`
 	Refresh_Expires string    `json:"refresh_expires"`
-	Created_At      time.Time `json:"created_at"` // Initial login date
+	Created_At      time.Time `json:"created_at"`
 	Updated_At      time.Time `json:"updated_at"` // most recent session refresh
 }
 
+// User login history, stores device/location information
 type Login_History struct {
 	ID          int       `json:"id"`
 	User_ID     int       `json:"user_id"`
 	IP_Address  string    `json:"ip_address"`
 	Geo_Country string    `json:"geo_country"`
-	Last_Login  time.Time `json:"last_login"`
+	Login_At    time.Time `json:"login_at"`
+	// TODO: Unique Device Fingerprints?
 }
 
 // Inventory products
@@ -82,12 +84,4 @@ type Suppliers struct {
 	Address    string    `json:"address"`
 	Created_At time.Time `json:"created_at"`
 	Updated_At time.Time `json:"updated_at"`
-}
-
-// WIP: Not yet implemented
-// Each user can have many devices
-type Devices struct {
-	ID        int    `json:"id"`
-	User_ID   int    `json:"user_id"`
-	Device_ID string `json:"device_id"`
 }
