@@ -16,8 +16,8 @@ import (
 // @Description Returns authenticated user data
 // @Tags user
 // @Produce json
-// @Success 200 {object} api.UserDataResponse
-// @Failure 401 {object} api.ErrorResponse "Internal server error"
+// @Success 200 {object} api.UserData
+// @Failure 401 {object} api.ErrInternalServer "Internal server error"
 // @Router /user [get]
 func GetUserData(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -43,7 +43,7 @@ func GetUserData(db *sql.DB) fiber.Handler {
 
 		log.Printf("--email: %s, role: %s", user.Email, user.Role)
 		// Success, return data as json
-		return c.Status(fiber.StatusOK).JSON(api.UserDataResponse{
+		return c.Status(fiber.StatusOK).JSON(api.UserData{
 			Email:       user.Email,
 			Role:        user.Role,
 			Profile_URL: user.Profile_URL,

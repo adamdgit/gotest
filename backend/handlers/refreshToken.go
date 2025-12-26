@@ -18,8 +18,8 @@ import (
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} map[string]string "Access token refreshed"
-// @Failure      401 {object} api.ErrorResponse "Session expired, please log in again"
-// @Failure      500 {object} api.ErrorResponse "Internal server error"
+// @Failure      401 {object} api.ErrSessionExpired "Session expired, please log in again"
+// @Failure      500 {object} api.ErrInternalServer "Internal server error"
 // @Router       /api/refresh [post]
 // @Security     CookieAuth
 func RefreshAccessToken(db *sql.DB) fiber.Handler {
@@ -28,8 +28,8 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 
 		if refresh_token == "" {
 			log.Printf("Error 1: Mising refresh token")
-			return c.Status(fiber.StatusInternalServerError).JSON(
-				api.ErrInternalServer,
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				api.ErrSessionExpired,
 			)
 		}
 
