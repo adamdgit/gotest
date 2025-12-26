@@ -16,8 +16,8 @@ import (
 // @Description Returns authenticated user data
 // @Tags user
 // @Produce json
-// @Success 200 {object} models.UserDataResponse
-// @Failure 401 {object} models.ErrorResponse "Internal server error"
+// @Success 200 {object} api.UserDataResponse
+// @Failure 401 {object} api.ErrorResponse "Internal server error"
 // @Router /user [get]
 func GetUserData(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
