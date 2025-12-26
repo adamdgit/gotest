@@ -1,0 +1,47 @@
+definitions:
+  models.UserDataRes:
+    properties:
+      email:
+        type: string
+      profile_url:
+        type: string
+      role:
+        $ref: '#/definitions/models.UserRole'
+    type: object
+  models.UserRole:
+    enum:
+    - admin
+    - manager
+    - staff
+    - member
+    - customer
+    type: string
+    x-enum-varnames:
+    - Admin
+    - Manager
+    - Staff
+    - Member
+    - Customer
+info:
+  contact: {}
+paths:
+  /user:
+    get:
+      description: Returns authenticated user data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserDataRes'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get current users data
+      tags:
+      - user
+swagger: "2.0"
