@@ -95,7 +95,7 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 
 		// Generate session and refresh token as UTC datetime
 		access_token := uuid.New().String()
-		access_expiration := time.Now().UTC().Add(1 * time.Minute)
+		access_expiration := time.Now().UTC().Add(15 * time.Minute)
 
 		refresh_token := uuid.New().String()
 		refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
