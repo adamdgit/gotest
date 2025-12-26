@@ -5,24 +5,32 @@ import (
 	"log"
 	"time"
 
+	"github.com/adamdgit/gotest/backend/api"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
-// Get post by provided id
-// Access token is expired, generate new one
+// RefreshAccessToken godoc
+//
+// @Summary      Refresh access token
+// @Description  Generates a new access token (and optionally a new refresh token) if the current access token is expired, using the refresh token from cookies. Invalidates expired sessions.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} map[string]string "Access token refreshed"
+// @Failure      401 {object} models.ErrorResponse "Session expired, please log in again"
+// @Failure      500 {object} models.ErrorResponse "Internal server error"
+// @Router       /api/refresh [post]
+// @Security     CookieAuth
 func RefreshAccessToken(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var (
-			ErrorSessionExpired = c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Session expired, please log in again."})
-			ErrorServerInternal = c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal Server Error"})
-		)
-
 		refresh_token := c.Cookies("refresh_token")
 
 		if refresh_token == "" {
 			log.Printf("Error 1: Mising refresh token")
-			return ErrorServerInternal
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		var refresh_expiration time.Time
@@ -31,7 +39,9 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		tx, err := db.BeginTx(c.Context(), &sql.TxOptions{})
 		if err != nil {
 			log.Printf("Error 2: %s", err)
-			return ErrorServerInternal
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		// Get refresh token expiration from DB
@@ -40,7 +50,9 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		if err != nil {
 			_ = tx.Rollback()
 			log.Printf("Error 3: %s", err)
-			return ErrorServerInternal
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		// Invalidate session if refresh token expired
@@ -49,7 +61,9 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 			if err != nil {
 				_ = tx.Rollback()
 				log.Printf("Error 4: %s", err)
-				return ErrorServerInternal
+				return c.Status(fiber.StatusInternalServerError).JSON(
+					api.ErrInternalServer,
+				)
 			}
 
 			// expire cookies
@@ -71,7 +85,9 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 				Expires:  time.Unix(0, 0),
 			})
 
-			return ErrorSessionExpired
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				api.ErrSessionExpired,
+			)
 		}
 
 		// Generate new session tokens
@@ -87,13 +103,17 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		if err != nil {
 			_ = tx.Rollback()
 			log.Printf("Error 6: %s", err)
-			return ErrorServerInternal
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		if err := tx.Commit(); err != nil {
 			_ = tx.Rollback()
 			log.Printf("Error 7: %s", err)
-			return ErrorServerInternal
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		// Generate new cookies
