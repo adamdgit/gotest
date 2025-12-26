@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+// UserRole represents a users role
+// @Enum admin user
 type UserRole string
 
 const (
