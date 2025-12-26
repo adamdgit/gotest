@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/adamdgit/gotest/backend/api"
 	"github.com/adamdgit/gotest/backend/models"
 	"github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
@@ -29,9 +30,9 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		// Parse body JSON and extract email, password
 		err := c.BodyParser(&req)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid request body",
-			})
+			return c.Status(fiber.StatusBadRequest).JSON(
+				api.ErrInvalidBody,
+			)
 		}
 
 		email := req.Email
@@ -44,22 +45,20 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 
 		var user models.User
 
-		// If ErrNoRows user has provided invalid login details
-		// else we need to check password is valid
 		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.Profile_URL)
-		if err == sql.ErrNoRows {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid login details",
-			})
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				api.ErrInvalidCredentials,
+			)
 		}
 
 		// Check password matches the hash
 		hash := user.Password
 		ok := CheckPasswordHash(password, hash)
 		if !ok {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid login details",
-			})
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				api.ErrInvalidCredentials,
+			)
 		}
 
 		// Get IP and Geolocation data to save in session
@@ -83,9 +82,9 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			user.ID, ip_address, country)
 		if err != nil {
 			log.Printf("Err 1: %s", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Internal Server Error",
-			})
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		// Generate session and refresh token as UTC datetime
@@ -100,9 +99,9 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			user.ID, access_token, refresh_token, access_expiration, refresh_expiration)
 		if err != nil {
 			log.Printf("Err 2: %s", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Internal Server Error",
-			})
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		// TODO: look into new partitoned attribute for cookies
@@ -127,10 +126,10 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			Expires:  refresh_expiration,
 		})
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"email":       user.Email,
-			"role":        user.Role,
-			"profile_url": user.Profile_URL,
+		return c.Status(fiber.StatusOK).JSON(api.UserData{
+			Email:       user.Email,
+			Role:        user.Role,
+			Profile_URL: user.Profile_URL,
 		})
 	}
 }

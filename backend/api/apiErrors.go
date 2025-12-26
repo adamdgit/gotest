@@ -45,4 +45,14 @@ var (
 		Error: "Too many requests",
 		Code:  "RATE_LIMITED",
 	}
+
+	ErrInvalidBody = Errors{
+		Error: "Invalid request body",
+		Code:  "INVALID_BODY",
+	}
+
+	ErrInvalidCredentials = Errors{
+		Error: "Invalid login details",
+		Code:  "INVALID_CREDENTIALS",
+	}
 )

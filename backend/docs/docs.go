@@ -46,13 +46,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Session expired, please log in again",
                         "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
+                            "$ref": "#/definitions/api.Errors"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
+                            "$ref": "#/definitions/api.Errors"
                         }
                     }
                 }
@@ -72,13 +72,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.UserDataResponse"
+                            "$ref": "#/definitions/api.UserData"
                         }
                     },
                     "401": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
+                            "$ref": "#/definitions/api.Errors"
                         }
                     }
                 }
@@ -86,7 +86,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.ErrorResponse": {
+        "api.Errors": {
             "type": "object",
             "properties": {
                 "code": {
@@ -99,7 +99,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.UserDataResponse": {
+        "api.UserData": {
             "type": "object",
             "properties": {
                 "email": {
