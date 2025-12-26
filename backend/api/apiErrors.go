@@ -51,6 +51,11 @@ var (
 		Code:  "INVALID_BODY",
 	}
 
+	ErrInvalidForm = Errors{
+		Error: "Missing required form fields",
+		Code:  "INVALID_FORM",
+	}
+
 	ErrInvalidCredentials = Errors{
 		Error: "Invalid login details",
 		Code:  "INVALID_CREDENTIALS",
