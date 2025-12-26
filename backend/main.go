@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	_ "github.com/adamdgit/gotest/backend/docs"
+
 	"github.com/adamdgit/gotest/backend/models"
 	"github.com/adamdgit/gotest/backend/routes"
 	"github.com/adamdgit/gotest/backend/utils"
@@ -18,6 +20,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/robfig/cron/v3"
+	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
 const PORT = ":8081"
@@ -52,25 +55,7 @@ func main() {
 		Views: engine,
 	})
 
-	// Create a new session store using MySQL storage
-	// storage := mysqlStorage.New(mysqlStorage.Config{
-	// 	Host:       "127.0.0.1",
-	// 	Port:       3306,
-	// 	Username:   username,
-	// 	Password:   password,
-	// 	Database:   dbname,
-	// 	Table:      "sessions",
-	// 	GCInterval: 10 * time.Minute,
-	// })
-
-	// Save session store with default config
-	// store := session.New(session.Config{
-	// 	CookieHTTPOnly: true,
-	// 	CookieSecure:   false, // true in PROD
-	// 	CookieSameSite: "None",
-	// 	// Storage:        storage,
-	// 	Expiration: 12 * time.Hour,
-	// })
+	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// app.Use(csrf.New(csrf.ConfigDefault))
 
