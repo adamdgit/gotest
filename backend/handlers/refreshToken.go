@@ -18,8 +18,8 @@ import (
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} map[string]string "Access token refreshed"
-// @Failure      401 {object} api.ErrSessionExpired "Session expired, please log in again"
-// @Failure      500 {object} api.ErrInternalServer "Internal server error"
+// @Failure      401 {object} api.Errors "Session expired, please log in again"
+// @Failure      500 {object} api.Errors "Internal server error"
 // @Router       /api/refresh [post]
 // @Security     CookieAuth
 func RefreshAccessToken(db *sql.DB) fiber.Handler {

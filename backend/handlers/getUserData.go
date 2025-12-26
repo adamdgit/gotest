@@ -17,7 +17,7 @@ import (
 // @Tags user
 // @Produce json
 // @Success 200 {object} api.UserData
-// @Failure 401 {object} api.ErrInternalServer "Internal server error"
+// @Failure 401 {object} api.Errors "Internal server error"
 // @Router /user [get]
 func GetUserData(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
