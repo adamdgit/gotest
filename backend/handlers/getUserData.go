@@ -5,12 +5,20 @@ import (
 	"database/sql"
 	"log"
 
+	"github.com/adamdgit/gotest/backend/api"
 	"github.com/adamdgit/gotest/backend/models"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 )
 
-// Get user data from sessions_id
+// GetUserData godoc
+// @Summary Get current users data
+// @Description Returns authenticated user data
+// @Tags user
+// @Produce json
+// @Success 200 {object} models.UserDataRes
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Router /user [get]
 func GetUserData(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		access_token := c.Cookies("access_token")
@@ -26,18 +34,19 @@ func GetUserData(db *sql.DB) fiber.Handler {
 		var user models.User
 
 		err := row.Scan(&user.Email, &user.Role, &user.Profile_URL)
-		if err == sql.ErrNoRows {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Couldn't retrieve user data",
-			})
+		if err != nil {
+			log.Printf("error getuserdata(): %s", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
 		}
 
 		log.Printf("--email: %s, role: %s", user.Email, user.Role)
 		// Success, return data as json
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"email":       user.Email,
-			"role":        user.Role,
-			"profile_url": user.Profile_URL,
+		return c.Status(fiber.StatusOK).JSON(api.UserDataResponse{
+			Email:       user.Email,
+			Role:        user.Role,
+			Profile_URL: user.Profile_URL,
 		})
 	}
 }
