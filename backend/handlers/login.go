@@ -38,13 +38,19 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		email := req.Email
 		password := req.Password
 
+		// handle missing form fields
+		if email == "" || password == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(
+				api.ErrInvalidForm,
+			)
+		}
+
+		var user models.User
+
 		// Get email and password from DB
 		row := db.QueryRowContext(context.Background(),
 			"SELECT ID, email, password, role, profile_url FROM users WHERE email = ?",
 			email)
-
-		var user models.User
-
 		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.Profile_URL)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(
