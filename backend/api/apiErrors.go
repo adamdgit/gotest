@@ -11,8 +11,13 @@ var (
 		Code:  "UNAUTHORIZED",
 	}
 
+	ErrAccessExpired = Errors{
+		Error: "Access token expired, please refresh",
+		Code:  "ACCESS_EXPIRED",
+	}
+
 	ErrSessionExpired = Errors{
-		Error: "Session expired, please log in again.",
+		Error: "Session expired, please log in again",
 		Code:  "SESSION_EXPIRED",
 	}
 
@@ -27,7 +32,7 @@ var (
 	}
 
 	ErrForbidden = Errors{
-		Error: "Forbidden",
+		Error: "Forbidden to access this resource",
 		Code:  "FORBIDDEN",
 	}
 
@@ -44,6 +49,16 @@ var (
 	ErrRateLimited = Errors{
 		Error: "Too many requests",
 		Code:  "RATE_LIMITED",
+	}
+
+	ErrNoRowsReturned = Errors{
+		Error: "No rows returned from database",
+		Code:  "NO_ROWS",
+	}
+
+	ErrEmailInUse = Errors{
+		Error: "Email already in use",
+		Code:  "EMAIL_INUSE",
 	}
 
 	ErrInvalidBody = Errors{
