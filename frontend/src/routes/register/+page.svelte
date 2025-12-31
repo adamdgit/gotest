@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
+
 	let email = '';
 	let password = '';
 	let error = '';
@@ -18,11 +20,12 @@
 		loading = false;
 
 		if (!res.ok) {
-			error = 'Registration failed';
+			const data = await res.json();
+			error = data.error;
 			return;
 		}
 
-		window.location.href = '/login';
+		goto('/login?msg=Account%20created%20successfully');
 	}
 </script>
 

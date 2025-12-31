@@ -1,8 +1,12 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
+	import { page } from "$app/state";
+
 	let email = '';
 	let password = '';
 	let error = '';
 	let loading = false;
+	let redirect_msg = page.url.searchParams.get("msg");
 
     async function login() {
 		error = '';
@@ -12,7 +16,7 @@
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'include',
-			body: JSON.stringify({ email, password })
+			body: JSON.stringify({ email, password, userAgent: navigator.userAgent })
 		});
 
 		loading = false;
@@ -23,11 +27,15 @@
 		}
 
 		// redirect on success
-		window.location.href = '/';
+		goto('/app');
 	}
 </script>
 
 <h1>Webapp Login</h1>
+
+{#if redirect_msg}
+	<p class="msg">{redirect_msg}</p>
+{/if}
 
 <form onsubmit={login}>
 	<label for="email">Email</label>
@@ -87,6 +95,10 @@
 
 	.error {
 		color: red;
+		text-align: center;
+	}
+	.msg {
+		color: #3d6185;
 		text-align: center;
 	}
 </style>
