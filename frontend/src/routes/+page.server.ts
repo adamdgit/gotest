@@ -1,3 +1,4 @@
+import type { User } from '$lib';
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 
@@ -34,6 +35,6 @@ export const load: PageServerLoad = async ({ fetch }) => {
         throw redirect(302, '/login');
     }
 
-    const user = await res.json();
+    const user: User = await res.json();
     return { user };
 };
