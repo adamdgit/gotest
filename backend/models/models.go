@@ -50,7 +50,9 @@ type Login_History struct {
 	User_ID     int       `json:"user_id"`
 	IP_Address  string    `json:"ip_address"`
 	Geo_Country string    `json:"geo_country"`
+	User_Agent  string    `json:"user_agent"`
 	Login_At    time.Time `json:"login_at"`
+	Logout_At   time.Time `json:"logout_at"`
 	// TODO: Unique Device Fingerprints?
 }
 
