@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"database/sql"
 	"log"
 	"net"
@@ -19,8 +18,9 @@ import (
 
 // JSON format from login body request
 type LoginReq struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	UserAgent string `json:"userAgent"`
 }
 
 func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
@@ -37,6 +37,7 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 
 		email := req.Email
 		password := req.Password
+		user_agent := req.UserAgent
 
 		// handle missing form fields
 		if email == "" || password == "" {
@@ -48,11 +49,12 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		var user models.User
 
 		// Get email and password from DB
-		row := db.QueryRowContext(context.Background(),
+		row := db.QueryRow(
 			"SELECT ID, email, password, role, profile_url FROM users WHERE email = ?",
 			email)
 		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.Profile_URL)
 		if err != nil {
+			log.Printf("ERR: ? %s", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrInvalidCredentials,
 			)
@@ -84,8 +86,8 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		// we should consider sending notification/email to the user
 
 		// Insert login information to login_history table
-		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, geo_country) VALUES (?, ?, ?)",
-			user.ID, ip_address, country)
+		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, geo_country, user_agent) VALUES (?, ?, ?, ?)",
+			user.ID, ip_address, country, user_agent)
 		if err != nil {
 			log.Printf("Err 1: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(
@@ -132,7 +134,7 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			Expires:  refresh_expiration,
 		})
 
-		return c.Status(fiber.StatusOK).JSON(api.UserData{
+		return c.Status(fiber.StatusOK).JSON(api.UserDataLogin{
 			Email:       user.Email,
 			Role:        user.Role,
 			Profile_URL: user.Profile_URL,
