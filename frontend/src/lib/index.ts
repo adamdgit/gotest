@@ -2,7 +2,7 @@
 import { readonly, writable } from 'svelte/store';
 
 export type User = {
-	email: number;
+	email: string;
 	role: string;
 	profile_url?: string;
 };
