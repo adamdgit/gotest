@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
     import { user } from '$lib';
 	import favicon from '$lib/assets/favicon.svg';
 	import '$lib/styles.css';
@@ -11,7 +12,7 @@
 			credentials: 'include'
 		});
 
-		window.location.href = '/login';
+		goto('/login');
 	}
 </script>
 
@@ -22,20 +23,18 @@
 <nav>
 	<ul class="navbar">
 		{#if $user}
-			<li><a href="/">Home</a></li>
-		{/if}
-
-		{#if !$user}
+			<li><a href="/app">Home</a></li>
+		{:else}
 			<li><a href="/login">Login</a></li>
+			<li><a href="/register">Register</a></li>
 		{/if}
-
-		<li><a href="/register">Register</a></li>
 	</ul>
 
 	{#if $user}
 		<div class="profile-bubble">
 			<span>{$user.email}</span>
 			<button onclick={logout} class="logout">Logout</button>
+			<img src={$user.profile_url} alt="Default user circle" class="profilePic" />
 		</div>
 	{/if}
 </nav>
@@ -65,6 +64,10 @@
 
 	.profile-bubble {
 
+	}
+
+	.profilePic {
+		color: white;
 	}
 
 	.logout {
