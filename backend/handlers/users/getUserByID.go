@@ -12,7 +12,7 @@ func GetUserDataByID(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("userid")
 
-		var user api.UserDataComplete
+		var user api.AdminUserDataRes
 
 		err := db.QueryRow(
 			`SELECT 
@@ -29,7 +29,7 @@ func GetUserDataByID(db *sql.DB) fiber.Handler {
 			FROM users 
 			WHERE id = ?`, id,
 		).Scan(
-			user.ID, user.Email, user.Firstname, user.Lastname, user.Phone, user.Address, user.Profile_URL, user.Created_At, user.Updated_At,
+			user.ID, user.Email, user.Firstname, user.Lastname, user.Phone, user.Address, user.Role, user.Profile_URL, user.Created_At, user.Updated_At,
 		)
 		if err != nil {
 			log.Printf("Error: %s", err)
