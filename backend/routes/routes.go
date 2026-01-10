@@ -13,7 +13,8 @@ import (
 )
 
 func RegisterAPIRoutes(app *fiber.App, db *sql.DB, geoDb *geoip2.Reader) {
-	// Get all Products
+	// ----------------- PRODUCTS ----------------- //
+
 	app.Get("/api/v1/products",
 		middleware.AuthSessionIsValid(db),
 		products.GetProductList(db),
@@ -34,6 +35,8 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB, geoDb *geoip2.Reader) {
 		products.GetProductsByCategory(db),
 	)
 
+	// ----------------- CATEGORIES ----------------- //
+
 	// Get all categories
 	app.Get("/api/v1/categories",
 		middleware.AuthSessionIsValid(db),
@@ -45,6 +48,8 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB, geoDb *geoip2.Reader) {
 		categories.AddNewCategory(db),
 	)
 
+	// ----------------- OTHER ----------------- //
+
 	// Refresh session using refresh token
 	app.Get("/api/refresh", handlers.RefreshAccessToken(db))
 
@@ -53,11 +58,15 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB, geoDb *geoip2.Reader) {
 	app.Get("/api/auth/logout", handlers.Logout(db))
 	app.Post("/api/auth/register", handlers.Register(db))
 
+	// ----------------- USER ----------------- //
+
 	// Gets users data based on session cookie
 	app.Get("/api/user",
 		middleware.AuthSessionIsValid(db),
 		users.GetUserData(db),
 	)
+
+	// ----------------- ADMIN ----------------- //
 
 	// Get user by ID
 	app.Get("/api/admin/user/:id",
