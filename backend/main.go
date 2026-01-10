@@ -16,7 +16,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/robfig/cron/v3"
@@ -48,12 +47,8 @@ func main() {
 	db.SetConnMaxLifetime(time.Minute * 3)
 	defer db.Close()
 
-	engine := html.New("./templates", ".html")
-
 	// Init Fiber app
-	app := fiber.New(fiber.Config{
-		Views: engine,
-	})
+	app := fiber.New()
 
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
