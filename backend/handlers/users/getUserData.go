@@ -43,7 +43,7 @@ func GetUserData(db *sql.DB) fiber.Handler {
 
 		log.Printf("--email: %s, role: %s", user.Email, user.Role)
 		// Success, return data as json
-		return c.Status(fiber.StatusOK).JSON(api.UserDataLogin{
+		return c.Status(fiber.StatusOK).JSON(api.UserSessionRes{
 			Email:       user.Email,
 			Role:        user.Role,
 			Profile_URL: user.Profile_URL,
