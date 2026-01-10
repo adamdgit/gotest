@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net"
 	"time"
@@ -21,6 +22,8 @@ type LoginReq struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	UserAgent string `json:"userAgent"`
+	// called username on frontend to trick bots into filling out
+	HoneyPot string `json:"username"`
 }
 
 func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
@@ -38,6 +41,23 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		email := req.Email
 		password := req.Password
 		user_agent := req.UserAgent
+		honey_pot := req.HoneyPot
+
+		log.Printf("hp: %s", honey_pot)
+
+		// If has honeypot has been filled out, reject request as likely a bot
+		if honey_pot != "" {
+			msg := fmt.Sprintf(
+				"LOGIN_REQ: honeypot: %q | Email: %q | UserAgent: %q\n",
+				honey_pot,
+				email,
+				user_agent,
+			)
+			utils.UpdateServerLogs(msg)
+			return c.Status(fiber.StatusBadRequest).JSON(
+				api.ErrInvalidForm,
+			)
+		}
 
 		// handle missing form fields
 		if email == "" || password == "" {
@@ -50,9 +70,9 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 
 		// Get email and password from DB
 		row := db.QueryRow(
-			"SELECT ID, email, password, role, profile_url FROM users WHERE email = ?",
+			"SELECT ID, email, password FROM users WHERE email = ?",
 			email)
-		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.Profile_URL)
+		err = row.Scan(&user.ID, &user.Email, &user.Password)
 		if err != nil {
 			log.Printf("ERR: ? %s", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(
@@ -60,9 +80,8 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			)
 		}
 
-		// Check password matches the hash
 		hash := user.Password
-		ok := CheckPasswordHash(password, hash)
+		ok := VerifyPassword(password, hash)
 		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrInvalidCredentials,
@@ -71,13 +90,11 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 
 		// Get IP and Geolocation data to save in session
 		ip_address := c.IP()
-		record, err := geoDb.City(net.ParseIP(ip_address))
-
-		log.Printf("Country: %s", record.Country.IsoCode)
 
 		country := ""
+		record, err := geoDb.City(net.ParseIP(ip_address))
 		if err != nil {
-			utils.UpdateLogFile(err)
+			utils.UpdateServerLogs(fmt.Sprintf("Geolocation Error: %e", err))
 		} else {
 			country = record.Country.IsoCode
 		}
@@ -134,15 +151,15 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			Expires:  refresh_expiration,
 		})
 
-		return c.Status(fiber.StatusOK).JSON(api.UserDataLogin{
-			Email:       user.Email,
-			Role:        user.Role,
-			Profile_URL: user.Profile_URL,
+		return c.Status(fiber.StatusOK).JSON(api.LoginSessionRes{
+			User_ID:       user.ID,
+			Access_Token:  access_token,
+			Refresh_Token: refresh_token,
 		})
 	}
 }
 
-func CheckPasswordHash(password string, hash string) bool {
+func VerifyPassword(password string, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
