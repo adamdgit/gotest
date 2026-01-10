@@ -1,49 +1,73 @@
-import { goto } from '$app/navigation';
-
-let refreshPromise: Promise<boolean> | null = null;
-
-async function refreshAccessToken(): Promise<boolean> {
-	if (!refreshPromise) {
-		refreshPromise = (async () => {
-			const res = await fetch('http://localhost:8081/api/refresh', {
-				credentials: 'include'
-			});
-			refreshPromise = null;
-			return res.ok;
-		})();
-	}
-
-	return refreshPromise;
-}
-
-// Refresh token wrapper for fetch API calls
-// handles automatic refresh ok access tokens if needed
+// Automatically attempts to refresh access tokens if they expire
+// and sends request again if refresh is successful. 
+// Also a wrapper for fetch, returning errors
 export async function authFetch(
 	input: RequestInfo,
 	init: RequestInit = {}
-): Promise<Response> {
-	const res = await fetch(input, {
-		...init,
-		credentials: 'include'
-	});
+): Promise<{ 
+	response: any | null, 
+	error?: string | null, 
+	shouldRedirect?: boolean 
+}> {
+	let response:  any | null = null;
+	let error: string | null = null;
+	let shouldRedirect = false;
 
-	// Skip attempting to refresh if auth is ok
-	if (res.status === 200) {
-		return res;
+	try {
+		const res = await fetch(input, {
+			...init,
+			credentials: 'include'
+		});
+
+		// Skip attempting to refresh if auth is ok
+		if (res.ok) {
+			const data = await res.json();
+			response = data;
+			return { response, error, shouldRedirect }
+		}
+	} catch (err) {
+		error = "Network Error";
+		shouldRedirect = true;
+		return { response, error, shouldRedirect }
 	}
 
 	// Attempt refresh
-	const refreshed = await refreshAccessToken();
+	try {
+		const refreshRes = await fetch('http://localhost:8081/api/refresh', {
+			credentials: 'include'
+		});
 
-	if (!refreshed) {
-		console.log("Refresh Error: ", refreshed)
-		goto('/login');
-		throw new Error('Session expired');
+		// Refresh failed, return errors
+		if (!refreshRes.ok) {
+			error = refreshRes.statusText;
+			shouldRedirect = true;
+			return { response, error, shouldRedirect }
+		}
+	} catch (err) {
+		error = "Network Error";
+		shouldRedirect = true;
+		return { response, error, shouldRedirect }
 	}
 
-	// Retry original request
-	return fetch(input, {
-		...init,
-		credentials: 'include'
-	});
+	// retry after refreshing token is successful
+	try {
+		const res = await fetch(input, {
+			...init,
+			credentials: 'include'
+		});
+
+		if (res.ok) {
+			const data = await res.json();
+			response = data;
+		} else {
+			error = res.statusText;
+			shouldRedirect = true;
+		}
+	} catch (err) {
+		error = "Network Error";
+		shouldRedirect = true;
+	}
+
+	// Retry request was successful, return results
+	return { response, error, shouldRedirect }
 }
