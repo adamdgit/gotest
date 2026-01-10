@@ -6,3 +6,5 @@ backend.exe
 *.log
 
 /backend/geoip/
+
+*native
