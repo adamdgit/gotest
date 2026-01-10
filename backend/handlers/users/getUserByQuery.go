@@ -19,7 +19,7 @@ func GetUserByQuery(db *sql.DB) fiber.Handler {
 			)
 		}
 
-		var users []api.UserDataSmall
+		var users []api.AdminUserDataRes
 		// Adding wildcard operators for query
 		searchTerm := "%" + search + "%"
 		rows, err := db.Query(
@@ -28,8 +28,12 @@ func GetUserByQuery(db *sql.DB) fiber.Handler {
 				email,
 				firstname,
 				lastname,
+				phone,
 				address,
-				role
+				role,
+				profile_url,
+				created_at,
+				updated_at
 			FROM 
 				users 
 			WHERE 
@@ -57,15 +61,19 @@ func GetUserByQuery(db *sql.DB) fiber.Handler {
 
 		// Append each row result to the users array
 		for rows.Next() {
-			var user api.UserDataSmall
+			var user api.AdminUserDataRes
 
 			err := rows.Scan(
 				&user.ID,
 				&user.Email,
 				&user.Firstname,
 				&user.Lastname,
+				&user.Phone,
 				&user.Address,
 				&user.Role,
+				&user.Profile_URL,
+				&user.Created_At,
+				&user.Updated_At,
 			)
 			if err != nil {
 				log.Printf("Row scan error: %v", err)
