@@ -35,7 +35,7 @@ func Register(db *sql.DB) fiber.Handler {
 		email := req.Email
 		password := req.Password
 		// Frontend folder for assets
-		profile_url := "$lib/assets/profiledefault.svg"
+		profile_url := "/images/profiledefault.svg"
 
 		var exists bool
 		// Check if user exists already. before creating
