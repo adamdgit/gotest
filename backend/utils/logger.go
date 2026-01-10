@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func UpdateLogFile(message interface{}) error {
+func UpdateServerLogs(message interface{}) error {
 	// Open the log file in append mode, create it if it doesn't exist
 	logFile, err := os.OpenFile("server.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
