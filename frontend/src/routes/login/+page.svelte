@@ -1,6 +1,9 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
 	import { page } from "$app/state";
+    import { user } from "$lib";
+    import type { APIError } from "$lib/apiResponses";
+    import { onMount } from "svelte";
 
 	let email = '';
 	let password = '';
@@ -8,22 +11,38 @@
 	let loading = false;
 	let redirect_msg = page.url.searchParams.get("msg");
 
+	onMount(() => {
+		if (user) {
+			goto('/app')
+		}
+	});
+
     async function login() {
 		error = '';
 		loading = true;
 
-		const res = await fetch(`http://localhost:8081/api/auth/login`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
-			body: JSON.stringify({ email, password, userAgent: navigator.userAgent })
-		});
+		// hp value
+		let x = document.getElementById('username') as HTMLInputElement;
+		let username = x.value ?? "";
 
-		loading = false;
+		try {
+			const res = await fetch(`http://localhost:8081/api/auth/login`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ email, password, userAgent: navigator.userAgent, username })
+			});
 
-		if (!res.ok) {
-			error = 'Invalid email or password';
-			return;
+			if (!res.ok) {
+				const data = await res.json() as APIError;
+
+				error = data.error;
+				return;
+			}
+		} catch (err) {
+			console.error(err);
+		} finally {
+			loading = false;
 		}
 
 		// redirect on success
@@ -43,6 +62,11 @@
 	
 	<label for="password">Password</label>
 	<input name="password" type="password" bind:value={password} required />
+
+	<div class="hp-wrap">
+		<label for="username">Username</label>
+		<input id="username" name="username" type="text" tabindex="-1" autocomplete="off" />
+	</div>
 
 	<button disabled={loading}>
 		{loading ? 'Logging in...' : 'Login'}
@@ -100,5 +124,14 @@
 	.msg {
 		color: #3d6185;
 		text-align: center;
+	}
+
+	.hp-wrap {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		width: 0px;
+		height: 0px;
+		overflow: hidden;	
 	}
 </style>
