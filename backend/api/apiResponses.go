@@ -6,23 +6,19 @@ import (
 	"github.com/adamdgit/gotest/backend/models"
 )
 
-type UserDataLogin struct {
+type LoginSessionRes struct {
+	User_ID       int    `json:"id"`
+	Access_Token  string `json:"access_token"`
+	Refresh_Token string `json:"refresh_token"`
+}
+
+type UserSessionRes struct {
 	Email       string          `json:"email"`
 	Role        models.UserRole `json:"role"`
 	Profile_URL string          `json:"profile_url"`
 }
 
-type UserDataSmall struct {
-	ID        int             `json:"id"`
-	Email     string          `json:"email"`
-	Firstname string          `json:"firstname"`
-	Lastname  string          `json:"lastname"`
-	Address   string          `json:"address"`
-	Role      models.UserRole `json:"role"`
-}
-
-// Get all user data, for admins only
-type UserDataComplete struct {
+type AdminUserDataRes struct {
 	ID          int             `json:"id"`
 	Email       string          `json:"email"`
 	Firstname   string          `json:"firstname"`
