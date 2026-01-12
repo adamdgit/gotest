@@ -11,9 +11,7 @@ export const prerender = false;
 export const load: LayoutLoad = async () => {
 	const { response, error, shouldRedirect } = await authFetch('http://localhost:8081/api/user');
 
-	if (shouldRedirect) throw redirect(302, '/login');
-	if (error) throw redirect(302, '/login');
+	if (shouldRedirect || error) throw redirect(302, '/login');
 
-	const user = response as UserSessionRes;
-	return { user };
+	return { user: response as UserSessionRes };
 };
