@@ -12,6 +12,11 @@ type LoginSessionRes struct {
 	Refresh_Token string `json:"refresh_token"`
 }
 
+type RefreshSessionRes struct {
+	Access_Token  string `json:"access_token"`
+	Refresh_Token string `json:"refresh_token"`
+}
+
 type UserSessionRes struct {
 	Email       string          `json:"email"`
 	Role        models.UserRole `json:"role"`
