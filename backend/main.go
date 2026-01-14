@@ -17,7 +17,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
-	"github.com/oschwald/geoip2-golang"
 	"github.com/robfig/cron/v3"
 	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
@@ -45,6 +44,8 @@ func main() {
 		log.Fatal(err)
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(200)
+	db.SetMaxIdleConns(100)
 	defer db.Close()
 
 	// Init Fiber app
@@ -53,10 +54,6 @@ func main() {
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// app.Use(csrf.New(csrf.ConfigDefault))
-
-	// Geolocation DB
-	geoDb, _ := geoip2.Open("./geoip/GeoLite2-City.mmdb")
-	defer geoDb.Close()
 
 	app.Use(cors.New(cors.Config{
 		AllowCredentials: true,
@@ -72,7 +69,7 @@ func main() {
 	gob.Register(models.UserRole(""))
 
 	// Setup all API routes
-	routes.RegisterAPIRoutes(app, db, geoDb)
+	routes.RegisterAPIRoutes(app, db)
 
 	app.Static("/", "./public")
 
