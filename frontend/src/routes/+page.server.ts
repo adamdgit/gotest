@@ -1,4 +1,4 @@
-import type { User } from '$lib';
+import type { UserSessionRes } from '$lib/apiResponses';
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 
@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
     // If user not found or access token expired
     if (res.status === 401) {
         // Try refreshing
-        const refreshRes = await fetch('http://localhost:8081/api/refresh', {
+        const refreshRes = await fetch('http://localhost:8081/api/auth/refresh', {
             credentials: 'include',
         });
 
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
 
         if (!newUserRes.ok) throw redirect(302, '/login');
 
-        const user = await newUserRes.json();
+        const user: UserSessionRes = await newUserRes.json();
         return { user };
     }
 
@@ -35,6 +35,6 @@ export const load: PageServerLoad = async ({ fetch }) => {
         throw redirect(302, '/login');
     }
 
-    const user: User = await res.json();
+    const user: UserSessionRes = await res.json();
     return { user };
 };
