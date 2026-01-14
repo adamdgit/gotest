@@ -1,13 +1,14 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"log"
 	"time"
 
 	"github.com/adamdgit/gotest/backend/api"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 // RefreshAccessToken godoc
@@ -44,8 +45,16 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 			)
 		}
 
+		// incoming tokens must be decoded into binary (how they are stored in DB)
+		decoded_refresh, err := base64.RawURLEncoding.DecodeString(refresh_token)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
+
 		// Get refresh token expiration from DB
-		err = tx.QueryRow("SELECT refresh_expires FROM sessions WHERE refresh_token = ?", refresh_token).
+		err = tx.QueryRow("SELECT refresh_expires FROM sessions WHERE refresh_token = ?", decoded_refresh).
 			Scan(&refresh_expiration)
 		if err != nil {
 			_ = tx.Rollback()
@@ -57,7 +66,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 
 		// Invalidate session if refresh token expired
 		if time.Now().UTC().After(refresh_expiration) {
-			_, err := tx.Exec("DELETE FROM sessions WHERE refresh_token = ?", refresh_token)
+			_, err := tx.Exec("DELETE FROM sessions WHERE refresh_token = ?", decoded_refresh)
 			if err != nil {
 				_ = tx.Rollback()
 				log.Printf("Error 4: %s", err)
@@ -90,11 +99,21 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 			)
 		}
 
-		// Generate new session tokens
-		new_access_token := uuid.New().String()
+		// Generate tokens using random bytes, saves space in db
+		new_access_token := make([]byte, 32)
+		if _, err := rand.Read(new_access_token); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 		new_access_expiration := time.Now().UTC().Add(15 * time.Minute)
 
-		new_refresh_token := uuid.New().String()
+		new_refresh_token := make([]byte, 32)
+		if _, err := rand.Read(new_refresh_token); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 		new_refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// update the users session with new tokens
@@ -116,10 +135,14 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 			)
 		}
 
+		// Convert bytes to base64 string before sending to client
+		access_tB64 := base64.RawURLEncoding.EncodeToString(new_access_token)
+		refresh_tB64 := base64.RawURLEncoding.EncodeToString(new_refresh_token)
+
 		// Generate new cookies
 		c.Cookie(&fiber.Cookie{
 			Name:     "access_token",
-			Value:    new_access_token,
+			Value:    access_tB64,
 			HTTPOnly: true,
 			Secure:   false,
 			SameSite: "Lax",
@@ -128,15 +151,16 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 
 		c.Cookie(&fiber.Cookie{
 			Name:     "refresh_token",
-			Value:    new_refresh_token,
+			Value:    refresh_tB64,
 			HTTPOnly: true,
 			Secure:   false,
 			SameSite: "Lax",
 			Expires:  new_refresh_expiration,
 		})
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"Message": "Access token refreshed",
+		return c.Status(fiber.StatusOK).JSON(api.RefreshSessionRes{
+			Access_Token:  access_tB64,
+			Refresh_Token: refresh_tB64,
 		})
 	}
 }
