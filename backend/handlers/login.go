@@ -1,10 +1,11 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"log"
-	"net"
 	"time"
 
 	"github.com/adamdgit/gotest/backend/api"
@@ -12,8 +13,6 @@ import (
 	"github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"github.com/oschwald/geoip2-golang"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,7 +25,7 @@ type LoginReq struct {
 	HoneyPot string `json:"username"`
 }
 
-func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
+func Login(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req LoginReq
 
@@ -81,8 +80,8 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		}
 
 		hash := user.Password
-		ok := VerifyPassword(password, hash)
-		if !ok {
+		err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrInvalidCredentials,
 			)
@@ -91,20 +90,12 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		// Get IP and Geolocation data to save in session
 		ip_address := c.IP()
 
-		country := ""
-		record, err := geoDb.City(net.ParseIP(ip_address))
-		if err != nil {
-			utils.UpdateServerLogs(fmt.Sprintf("Geolocation Error: %e", err))
-		} else {
-			country = record.Country.IsoCode
-		}
-
 		// TODO: Check previous login_history, if country is different
 		// we should consider sending notification/email to the user
 
 		// Insert login information to login_history table
-		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, geo_country, user_agent) VALUES (?, ?, ?, ?)",
-			user.ID, ip_address, country, user_agent)
+		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)",
+			user.ID, ip_address, user_agent)
 		if err != nil {
 			log.Printf("Err 1: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(
@@ -112,11 +103,21 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			)
 		}
 
-		// Generate session and refresh token as UTC datetime
-		access_token := uuid.New().String()
+		// Generate tokens using random bytes, saves space in db
+		access_token := make([]byte, 32)
+		if _, err := rand.Read(access_token); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 		access_expiration := time.Now().UTC().Add(15 * time.Minute)
 
-		refresh_token := uuid.New().String()
+		refresh_token := make([]byte, 32)
+		if _, err := rand.Read(refresh_token); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 		refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// Insert session data to database
@@ -129,12 +130,16 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 			)
 		}
 
+		// Convert bytes to base64 string before sending to client
+		access_tB64 := base64.RawURLEncoding.EncodeToString(access_token)
+		refresh_tB64 := base64.RawURLEncoding.EncodeToString(refresh_token)
+
 		// TODO: look into new partitoned attribute for cookies
 
 		// Set Access Token
 		c.Cookie(&fiber.Cookie{
 			Name:     "access_token",
-			Value:    access_token,
+			Value:    access_tB64,
 			HTTPOnly: true,
 			Secure:   false,
 			SameSite: "Lax",
@@ -144,7 +149,7 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 		// Set Refresh Token
 		c.Cookie(&fiber.Cookie{
 			Name:     "refresh_token",
-			Value:    refresh_token,
+			Value:    refresh_tB64,
 			HTTPOnly: true,
 			Secure:   false,
 			SameSite: "Lax",
@@ -153,13 +158,8 @@ func Login(db *sql.DB, geoDb *geoip2.Reader) fiber.Handler {
 
 		return c.Status(fiber.StatusOK).JSON(api.LoginSessionRes{
 			User_ID:       user.ID,
-			Access_Token:  access_token,
-			Refresh_Token: refresh_token,
+			Access_Token:  access_tB64,
+			Refresh_Token: refresh_tB64,
 		})
 	}
-}
-
-func VerifyPassword(password string, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
 }
