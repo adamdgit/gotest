@@ -69,7 +69,11 @@ func main() {
 	gob.Register(models.UserRole(""))
 
 	// Setup all API routes
-	routes.RegisterAPIRoutes(app, db)
+	routes.RegisterAdminRoutes(app, db)
+	routes.RegisterAuthRoutes(app, db)
+	routes.RegisterUserRoutes(app, db)
+	routes.RegisterCategoryRoutes(app, db)
+	routes.RegisterProductRoutes(app, db)
 
 	app.Static("/", "./public")
 
