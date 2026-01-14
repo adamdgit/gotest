@@ -9,10 +9,9 @@ import (
 	"github.com/adamdgit/gotest/backend/handlers/users"
 	"github.com/adamdgit/gotest/backend/middleware"
 	"github.com/gofiber/fiber/v2"
-	"github.com/oschwald/geoip2-golang"
 )
 
-func RegisterAPIRoutes(app *fiber.App, db *sql.DB, geoDb *geoip2.Reader) {
+func RegisterAPIRoutes(app *fiber.App, db *sql.DB) {
 	// ----------------- PRODUCTS ----------------- //
 
 	app.Get("/api/v1/products",
@@ -54,7 +53,7 @@ func RegisterAPIRoutes(app *fiber.App, db *sql.DB, geoDb *geoip2.Reader) {
 	app.Get("/api/refresh", handlers.RefreshAccessToken(db))
 
 	// Login, Logout, Register
-	app.Post("/api/auth/login", handlers.Login(db, geoDb))
+	app.Post("/api/auth/login", handlers.Login(db))
 	app.Get("/api/auth/logout", handlers.Logout(db))
 	app.Post("/api/auth/register", handlers.Register(db))
 
