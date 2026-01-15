@@ -31,11 +31,7 @@ func Login(db *sql.DB) fiber.Handler {
 
 		// Parse body JSON and extract email, password
 		err := c.BodyParser(&req)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(
-				api.ErrInvalidBody,
-			)
-		}
+		utils.HandleAPIError(c, err, fiber.StatusBadRequest, api.ErrInvalidBody, nil)
 
 		email := req.Email
 		password := req.Password
@@ -69,23 +65,14 @@ func Login(db *sql.DB) fiber.Handler {
 
 		// Get email and password from DB
 		row := db.QueryRow(
-			"SELECT ID, email, password FROM users WHERE email = ?",
+			"SELECT ID, email, password, role FROM users WHERE email = ?",
 			email)
-		err = row.Scan(&user.ID, &user.Email, &user.Password)
-		if err != nil {
-			log.Printf("ERR: ? %s", err)
-			return c.Status(fiber.StatusUnauthorized).JSON(
-				api.ErrInvalidCredentials,
-			)
-		}
+		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role)
+		utils.HandleAPIError(c, err, fiber.StatusUnauthorized, api.ErrInvalidCredentials, nil)
 
 		hash := user.Password
 		err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(
-				api.ErrInvalidCredentials,
-			)
-		}
+		utils.HandleAPIError(c, err, fiber.StatusUnauthorized, api.ErrInvalidCredentials, nil)
 
 		// Get IP and Geolocation data to save in session
 		ip_address := c.IP()
@@ -94,41 +81,32 @@ func Login(db *sql.DB) fiber.Handler {
 		// we should consider sending notification/email to the user
 
 		// Insert login information to login_history table
-		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)",
+		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)",
 			user.ID, ip_address, user_agent)
-		if err != nil {
-			log.Printf("Err 1: %s", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(
-				api.ErrInternalServer,
-			)
-		}
+		msg := "Err1"
+		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
 
 		// Generate tokens using random bytes, saves space in db
 		access_token := make([]byte, 32)
-		if _, err := rand.Read(access_token); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(
-				api.ErrInternalServer,
-			)
-		}
+		_, err = rand.Read(access_token)
+		log.Printf("Rand Bytes generated: %s", access_token)
+		msg = "Err2"
+		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
+
 		access_expiration := time.Now().UTC().Add(15 * time.Minute)
 
 		refresh_token := make([]byte, 32)
-		if _, err := rand.Read(refresh_token); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(
-				api.ErrInternalServer,
-			)
-		}
+		_, err = rand.Read(refresh_token)
+		msg = "Err3"
+		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
+
 		refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// Insert session data to database
-		_, err = db.Exec("INSERT INTO sessions (user_id, access_token, refresh_token, access_expires, refresh_expires) VALUES (?, ?, ?, ?, ?)",
-			user.ID, access_token, refresh_token, access_expiration, refresh_expiration)
-		if err != nil {
-			log.Printf("Err 2: %s", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(
-				api.ErrInternalServer,
-			)
-		}
+		_, err = db.Exec("INSERT INTO sessions (user_id, user_role, access_token, refresh_token, access_expires, refresh_expires) VALUES (?, ?, ?, ?, ?, ?)",
+			user.ID, user.Role, access_token, refresh_token, access_expiration, refresh_expiration)
+		msg = "Err4"
+		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
 
 		// Convert bytes to base64 string before sending to client
 		access_tB64 := base64.RawURLEncoding.EncodeToString(access_token)
