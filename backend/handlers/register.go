@@ -9,11 +9,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
-
 // JSON format from login body request
 type RegisterReq struct {
 	Email    string `json:"email"`
@@ -55,7 +50,7 @@ func Register(db *sql.DB) fiber.Handler {
 		}
 
 		// Hash password before inserting to db if email is available
-		hash, err := HashPassword(password)
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
@@ -70,7 +65,7 @@ func Register(db *sql.DB) fiber.Handler {
 				api.ErrInternalServer,
 			)
 		}
-		defer row.Close()
+		row.Close()
 
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 			"message": "User created successfully",
