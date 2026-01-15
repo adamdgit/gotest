@@ -68,7 +68,7 @@ func main() {
 	// FIX: gob encoder error when reading models.UserRole
 	gob.Register(models.UserRole(""))
 
-	// Setup all API routes
+	// Register all API routes
 	routes.RegisterAdminRoutes(app, db)
 	routes.RegisterAuthRoutes(app, db)
 	routes.RegisterUserRoutes(app, db)
