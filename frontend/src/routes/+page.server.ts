@@ -27,6 +27,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
 
         if (!newUserRes.ok) throw redirect(302, '/login');
 
+        // Early return on successful refresh
         const user: UserSessionRes = await newUserRes.json();
         return { user };
     }
