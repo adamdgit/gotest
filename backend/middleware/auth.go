@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"log"
 	"slices"
 	"time"
@@ -18,7 +19,7 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 		access_token := c.Cookies("access_token")
 
 		if access_token == "" {
-			log.Printf("AuthSessionIsValid ERR: no access token")
+			log.Printf("AuthSessionIsValid ERR1: no access token")
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrAccessExpired,
 			)
@@ -26,11 +27,19 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 
 		var access_expiration time.Time
 
+		// incoming tokens must be decoded into binary (how they are stored in DB)
+		decoded_access, err := base64.RawURLEncoding.DecodeString(access_token)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
+
 		// check token exists in db
-		err := db.QueryRow("SELECT access_expires FROM sessions WHERE access_token = ?", access_token).
+		err = db.QueryRow("SELECT access_expires FROM sessions WHERE access_token = ?", decoded_access).
 			Scan(&access_expiration)
 		if err != nil {
-			log.Printf("AuthSessionIsValid ERR, %s", err)
+			log.Printf("AuthSessionIsValid ERR2: %s", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrAccessExpired,
 			)
@@ -38,7 +47,7 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 
 		// check token expiration
 		if time.Now().UTC().After(access_expiration) {
-			log.Printf("AuthSessionIsValid ERR: expired token %s | %s", access_expiration, access_token)
+			log.Printf("AuthSessionIsValid ERR3: expired token %s | %s", access_expiration, decoded_access)
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrAccessExpired,
 			)
@@ -57,17 +66,24 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 // so we don't need to check the session is valid again
 func AuthUserHasRole(db *sql.DB, allowedRoles ...models.UserRole) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		accessToken := c.Cookies("access_token")
+		access_token := c.Cookies("access_token")
+
+		// incoming tokens must be decoded into binary (how they are stored in DB)
+		decoded_access, err := base64.RawURLEncoding.DecodeString(access_token)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 
 		// Retrieve user role
 		var user models.User
 
-		err := db.QueryRow(`
-            SELECT u.id, u.role
-            FROM users u
-            INNER JOIN sessions s ON u.id = s.user_id
-            WHERE s.access_token = ?
-        `, accessToken).Scan(&user.ID, &user.Role)
+		err = db.QueryRow(`
+            SELECT user_role
+            FROM sessions
+            WHERE access_token = ?
+        `, decoded_access).Scan(&user.Role)
 		if err != nil {
 			log.Printf("error: get user role %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(
