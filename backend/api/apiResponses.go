@@ -17,7 +17,7 @@ type RefreshSessionRes struct {
 	Refresh_Token string `json:"refresh_token"`
 }
 
-type UserSessionRes struct {
+type UserDataRes struct {
 	Email       string          `json:"email"`
 	Role        models.UserRole `json:"role"`
 	Profile_URL string          `json:"profile_url"`
