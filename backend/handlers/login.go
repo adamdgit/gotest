@@ -38,12 +38,10 @@ func Login(db *sql.DB) fiber.Handler {
 		user_agent := req.UserAgent
 		honey_pot := req.HoneyPot
 
-		log.Printf("hp: %s", honey_pot)
-
 		// If has honeypot has been filled out, reject request as likely a bot
 		if honey_pot != "" {
 			msg := fmt.Sprintf(
-				"LOGIN_REQ: honeypot: %q | Email: %q | UserAgent: %q\n",
+				"HONEYPOT_SUBMITTED: honeypot: %q | Email: %q | UserAgent: %q\n",
 				honey_pot,
 				email,
 				user_agent,
@@ -68,11 +66,19 @@ func Login(db *sql.DB) fiber.Handler {
 			"SELECT ID, email, password, role FROM users WHERE email = ?",
 			email)
 		err = row.Scan(&user.ID, &user.Email, &user.Password, &user.Role)
-		utils.HandleAPIError(c, err, fiber.StatusUnauthorized, api.ErrInvalidCredentials, nil)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				api.ErrInvalidCredentials,
+			)
+		}
 
 		hash := user.Password
 		err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-		utils.HandleAPIError(c, err, fiber.StatusUnauthorized, api.ErrInvalidCredentials, nil)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				api.ErrInvalidCredentials,
+			)
+		}
 
 		// Get IP and Geolocation data to save in session
 		ip_address := c.IP()
@@ -83,30 +89,40 @@ func Login(db *sql.DB) fiber.Handler {
 		// Insert login information to login_history table
 		_, err = db.Exec("INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)",
 			user.ID, ip_address, user_agent)
-		msg := "Err1"
-		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 
 		// Generate tokens using random bytes, saves space in db
 		access_token := make([]byte, 32)
 		_, err = rand.Read(access_token)
 		log.Printf("Rand Bytes generated: %s", access_token)
-		msg = "Err2"
-		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
-
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 		access_expiration := time.Now().UTC().Add(15 * time.Minute)
 
 		refresh_token := make([]byte, 32)
 		_, err = rand.Read(refresh_token)
-		msg = "Err3"
-		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
-
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 		refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// Insert session data to database
 		_, err = db.Exec("INSERT INTO sessions (user_id, user_role, access_token, refresh_token, access_expires, refresh_expires) VALUES (?, ?, ?, ?, ?, ?)",
 			user.ID, user.Role, access_token, refresh_token, access_expiration, refresh_expiration)
-		msg = "Err4"
-		utils.HandleAPIError(c, err, fiber.StatusInternalServerError, api.ErrInternalServer, &msg)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
 
 		// Convert bytes to base64 string before sending to client
 		access_tB64 := base64.RawURLEncoding.EncodeToString(access_token)
