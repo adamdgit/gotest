@@ -1,27 +1,26 @@
 package utils
 
 import (
-	"database/sql"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// HandleError handles different types of errors and sends a json response
-func HandleError(c *fiber.Ctx, err error, message string) error {
+// HandleAPIError logs optionally and sends a JSON error response
+func HandleAPIError(
+	c *fiber.Ctx,
+	err error,
+	status int,
+	response any,
+	logMsg *string,
+) error {
 	if err == nil {
-		return nil // No error, so just return nil
+		return nil
 	}
 
-	// Check for specific error types
-	switch err {
-	case sql.ErrNoRows:
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "No results found",
-		})
-
-	default:
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": message,
-		})
+	if logMsg != nil {
+		log.Printf("%s: %v", *logMsg, err)
 	}
+
+	return c.Status(status).JSON(response)
 }
