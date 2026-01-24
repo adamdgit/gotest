@@ -54,37 +54,3 @@ type Login_History struct {
 	Logout_At  time.Time `json:"logout_at"`
 	// TODO: Unique Device Fingerprints?
 }
-
-// Inventory products
-type Product struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Brand       string    `json:"brand"`
-	Description string    `json:"description"`
-	Price       string    `json:"price"` // Decimal(10,2) in MySQL can convert from string to float
-	Count       int       `json:"count"`
-	Category    int       `json:"category"`
-	Created_At  time.Time `json:"created_at"`
-	Updated_At  time.Time `json:"updated_at"`
-}
-
-// PRoduct categories
-type Categories struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Created_At  time.Time `json:"created_at"`
-	Updated_At  time.Time `json:"updated_at"`
-}
-
-// Product supplier info
-type Suppliers struct {
-	ID         int       `json:"id"`
-	Name       string    `json:"name"`
-	Contact    string    `json:"contact"`
-	Email      string    `json:"email"`
-	Phone      string    `json:"phone"`
-	Address    string    `json:"address"`
-	Created_At time.Time `json:"created_at"`
-	Updated_At time.Time `json:"updated_at"`
-}

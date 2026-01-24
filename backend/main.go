@@ -72,8 +72,6 @@ func main() {
 	routes.RegisterAdminRoutes(app, db)
 	routes.RegisterAuthRoutes(app, db)
 	routes.RegisterUserRoutes(app, db)
-	routes.RegisterCategoryRoutes(app, db)
-	routes.RegisterProductRoutes(app, db)
 
 	app.Static("/", "./public")
 
