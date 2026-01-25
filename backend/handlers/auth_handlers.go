@@ -33,6 +33,9 @@ func Login(db *sql.DB) fiber.Handler {
 		user_agent := req.UserAgent
 		honey_pot := req.HoneyPot
 
+		// Get IP and Geolocation data to save in session
+		ip_address := c.IP()
+
 		// If has honeypot has been filled out, reject request as likely a bot
 		if honey_pot != "" {
 			msg := fmt.Sprintf(
@@ -69,19 +72,8 @@ func Login(db *sql.DB) fiber.Handler {
 			)
 		}
 
-		// Get IP and Geolocation data to save in session
-		ip_address := c.IP()
-
 		// TODO: Check previous login_history, if country is different
 		// we should consider sending notification/email to the user
-
-		// Insert login information to login_history table
-		err = services.DB_InsertLoginHistory(db, user.ID, ip_address, user_agent)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(
-				api.ErrInternalServer,
-			)
-		}
 
 		// Generate tokens using random bytes, saves space in db
 		access_token := make([]byte, 32)
@@ -104,6 +96,14 @@ func Login(db *sql.DB) fiber.Handler {
 
 		// Insert session data to database
 		err = services.DB_InsertSessionData(db, user.ID, user.Role, access_token, refresh_token, access_expiration, refresh_expiration)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				api.ErrInternalServer,
+			)
+		}
+
+		// Insert login information to login_history table
+		err = services.DB_InsertLoginHistory(db, user.ID, ip_address, user_agent)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
@@ -156,15 +156,14 @@ func Logout(db *sql.DB) fiber.Handler {
 		}
 
 		// incoming tokens must be decoded into binary (how they are stored in DB)
-		decoded_refresh, err := base64.RawURLEncoding.DecodeString(refresh_token)
+		decoded_refresh_token, err := base64.RawURLEncoding.DecodeString(refresh_token)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
 		}
 
-		// Delete session from db
-		_, err = db.Exec("DELETE FROM sessions WHERE refresh_token = ?", decoded_refresh)
+		err = services.DB_DeleteSessionData(db, decoded_refresh_token)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrInternalServer,
@@ -213,18 +212,15 @@ func Register(db *sql.DB) fiber.Handler {
 		// Frontend folder for assets
 		profile_url := "/images/profiledefault.svg"
 
-		var exists bool
-		// Check if user exists already. before creating
-		err = db.QueryRow("SELECT EXISTS(SELECT email FROM users WHERE email = ?)", email).Scan(&exists)
-		log.Printf("Register: exists? %t", exists)
+		// Check if requested email is already in use
+		exists, err := services.DB_CheckEmaiExists(db, email)
 		if exists {
 			return c.Status(fiber.StatusConflict).JSON(
 				api.ErrEmailInUse,
 			)
 		}
-
 		if err != nil {
-			log.Printf("Register: err? %s", err)
+			log.Printf("Register/Exists ERR: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
@@ -239,14 +235,12 @@ func Register(db *sql.DB) fiber.Handler {
 		}
 
 		// Insert new user into DB
-		row, err := db.Query("INSERT INTO users (email, password, profile_url) VALUES (?, ?, ?)",
-			email, hash, profile_url)
+		err = services.DB_InsertNewUserData(db, email, hash, profile_url)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
 		}
-		row.Close()
 
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 			"message": "User created successfully",
@@ -271,7 +265,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		refresh_token := c.Cookies("refresh_token")
 
 		if refresh_token == "" {
-			log.Printf("Error 1: Mising refresh token")
+			log.Printf("Refresh Error 1: Mising refresh token")
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrSessionExpired,
 			)
@@ -288,20 +282,16 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		// Start a new DB transaciton to prevent race conditions for sessions
 		tx, err := db.BeginTx(c.Context(), &sql.TxOptions{})
 		if err != nil {
-			log.Printf("Error 2: %s", err)
+			log.Printf("Refresh Error 2: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
 		}
 
-		var refresh_expiration time.Time
-
-		// Get refresh token expiration from DB
-		err = tx.QueryRow("SELECT refresh_expires FROM sessions WHERE refresh_token = ?", decoded_refresh).
-			Scan(&refresh_expiration)
+		refresh_expiration, err := services.DB_GetRefreshTokenExpiration(tx, decoded_refresh)
 		if err != nil {
 			_ = tx.Rollback()
-			log.Printf("Error 3: %s", err)
+			log.Printf("Refresh Error 3: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
@@ -309,10 +299,10 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 
 		// Invalidate session if refresh token expired
 		if time.Now().UTC().After(refresh_expiration) {
-			_, err := tx.Exec("DELETE FROM sessions WHERE refresh_token = ?", decoded_refresh)
+			err = services.DB_DeleteSessionByToken(tx, decoded_refresh)
 			if err != nil {
 				_ = tx.Rollback()
-				log.Printf("Error 4: %s", err)
+				log.Printf("Refresh Error 4: %s", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(
 					api.ErrInternalServer,
 				)
@@ -360,8 +350,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		new_refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// update the users session with new tokens
-		_, err = tx.Exec("UPDATE sessions SET access_token = ?, access_expires = ?, refresh_token = ?, refresh_expires = ? WHERE refresh_token = ?",
-			new_access_token, new_access_expiration, new_refresh_token, new_refresh_expiration, refresh_token)
+		err = services.DB_UpdateSessionDataByToken(tx, new_access_token, new_access_expiration, new_refresh_token, new_refresh_expiration, decoded_refresh)
 		if err != nil {
 			_ = tx.Rollback()
 			log.Printf("Error 6: %s", err)

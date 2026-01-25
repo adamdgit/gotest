@@ -30,10 +30,12 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 		// incoming tokens must be decoded into binary (how they are stored in DB)
 		decoded_access, err := base64.RawURLEncoding.DecodeString(access_token)
 		if err != nil {
+			log.Printf("AuthSessionIsValid ERR4: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
 		}
+		log.Printf("decoded token: %s", decoded_access)
 
 		// check token exists in db
 		err = db.QueryRow("SELECT access_expires FROM sessions WHERE access_token = ?", decoded_access).

@@ -33,7 +33,7 @@ export async function authFetch(
 
 	// Attempt refresh
 	try {
-		const refreshRes = await fetch('http://localhost:8081/api/refresh', {
+		const refreshRes = await fetch('http://localhost:8081/api/auth/refresh', {
 			credentials: 'include'
 		});
 
