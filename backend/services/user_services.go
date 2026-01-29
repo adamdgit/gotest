@@ -7,7 +7,7 @@ import (
 	"github.com/adamdgit/gotest/backend/models"
 )
 
-func DB_GetUserDataByToken(db *sql.DB, token []byte) (data models.User, err error) {
+func DB_GetUserDataByToken(db *sql.DB, token []byte) (models.User, error) {
 	var user models.User
 
 	// Get the user_id via session_id and check its valid
@@ -15,9 +15,9 @@ func DB_GetUserDataByToken(db *sql.DB, token []byte) (data models.User, err erro
 		`SELECT u.email, u.role, u.profile_url 
 		FROM sessions s 
 		JOIN users u ON s.user_id = u.id 
-		WHERE s.access_token = ?`,
+		WHERE s.access_token = $1`,
 		token)
-	err = row.Scan(&user.Email, &user.Role, &user.Profile_URL)
+	err := row.Scan(&user.Email, &user.Role, &user.Profile_URL)
 
 	return user, err
 }

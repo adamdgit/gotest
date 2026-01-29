@@ -22,7 +22,7 @@ func GetUserByQuery(db *sql.DB) fiber.Handler {
 
 		// Handle any other query validation here as necessary
 
-		users, err := services.DB_GetUserDataByQuery(db, query)
+		users, err := services.DB_GetAllUserDataByQuery(db, query)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,

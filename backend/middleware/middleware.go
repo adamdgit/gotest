@@ -63,9 +63,9 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 	}
 }
 
-// AuthIsAdmin middleware ensures the user has admin privileges
 // NOTE: AuthSessionIsValid() should always be run first,
-// so we don't need to check the session is valid again
+// as this middleware has one function only, to verify roles
+// valid session is assumed once reaching this middleware
 func AuthUserHasRole(db *sql.DB, allowedRoles ...models.UserRole) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		access_token := c.Cookies("access_token")

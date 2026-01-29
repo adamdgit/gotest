@@ -6,33 +6,33 @@ import (
 	"github.com/adamdgit/gotest/backend/api"
 )
 
-func DB_GetUserDataByQuery(db *sql.DB, query string) (data []api.AdminUserDataRes, err error) {
+func DB_GetAllUserDataByQuery(db *sql.DB, query string) ([]api.AdminUserDataRes, error) {
 	var users []api.AdminUserDataRes
 	// Adding wildcard operators for query
 	searchTerm := "%" + query + "%"
 	rows, err := db.Query(
 		`SELECT 
-				id,
-				email,
-				firstname,
-				lastname,
-				phone,
-				address,
-				role,
-				profile_url,
-				created_at,
-				updated_at
-			FROM 
-				users 
-			WHERE 
-				email LIKE ?
-				OR firstname LIKE ?
-				OR lastname LIKE ?
-				OR phone LIKE ?
-				OR address LIKE ?
-			ORDER BY 
-				email ASC
-			LIMIT 20`,
+			id,
+			email,
+			firstname,
+			lastname,
+			phone,
+			address,
+			role,
+			profile_url,
+			created_at,
+			updated_at
+		FROM 
+			users 
+		WHERE 
+			email LIKE $1
+			OR firstname LIKE $2
+			OR lastname LIKE $3
+			OR phone LIKE $4
+			OR address LIKE $5
+		ORDER BY 
+			email ASC
+		LIMIT 20`,
 		searchTerm,
 		searchTerm,
 		searchTerm,
@@ -70,23 +70,23 @@ func DB_GetUserDataByQuery(db *sql.DB, query string) (data []api.AdminUserDataRe
 	return users, nil
 }
 
-func DB_GetUserDataByID(db *sql.DB, id string) (data api.AdminUserDataRes, err error) {
+func DB_GetUserDataByID(db *sql.DB, id string) (api.AdminUserDataRes, error) {
 	var user api.AdminUserDataRes
 
-	err = db.QueryRow(
+	err := db.QueryRow(
 		`SELECT 
-				id,
-				email,
-				firstname,
-				lastname,
-				phone,
-				address,
-				role,
-				profile_url,
-				created_at,
-				updated_at
-			FROM users 
-			WHERE id = ?`, id,
+		id,
+		email,
+		firstname,
+		lastname,
+		phone,
+		address,
+		role,
+		profile_url,
+		created_at,
+		updated_at
+	FROM users 
+	WHERE id = $1`, id,
 	).Scan(
 		user.ID, user.Email, user.Firstname, user.Lastname, user.Phone, user.Address, user.Role, user.Profile_URL, user.Created_At, user.Updated_At,
 	)

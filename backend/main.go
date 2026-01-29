@@ -9,13 +9,12 @@ import (
 	"time"
 
 	_ "github.com/adamdgit/gotest/backend/docs"
-
 	"github.com/adamdgit/gotest/backend/models"
 	"github.com/adamdgit/gotest/backend/routes"
 	"github.com/adamdgit/gotest/backend/utils"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	fiberSwagger "github.com/swaggo/fiber-swagger"
@@ -35,22 +34,32 @@ func main() {
 	address := os.Getenv("DB_ADDRESS")
 	dbname := os.Getenv("DB_NAME")
 
-	// Create MySQL connection string
-	conn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true", username, password, address, dbname)
+	// Create PostgreSQL connection string
+	conn := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", username, password, address, dbname)
 
 	// Init db with config
-	db, err := sql.Open("mysql", conn)
+	db, err := sql.Open("pgx", conn)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if err := db.Ping(); err != nil {
+		log.Fatal("unable to connect to postgres:", err)
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(200)
 	db.SetMaxIdleConns(100)
 	defer db.Close()
 
+	// Create database tables
+	if err := utils.InitDB(db); err != nil {
+		log.Fatal("DB init failed:", err)
+	}
+
 	// Init Fiber app
 	app := fiber.New()
 
+	// Initialise swagger docs
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// app.Use(csrf.New(csrf.ConfigDefault))
