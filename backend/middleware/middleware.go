@@ -9,6 +9,7 @@ import (
 
 	"github.com/adamdgit/gotest/backend/api"
 	"github.com/adamdgit/gotest/backend/models"
+	"github.com/adamdgit/gotest/backend/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -25,9 +26,7 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 			)
 		}
 
-		var access_expiration time.Time
-
-		// incoming tokens must be decoded into binary (how they are stored in DB)
+		// incoming tokens must be decoded into binary, then hashed (how they are stored in DB)
 		decoded_access, err := base64.RawURLEncoding.DecodeString(access_token)
 		if err != nil {
 			log.Printf("AuthSessionIsValid ERR4: %s", err)
@@ -35,10 +34,11 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 				api.ErrInternalServer,
 			)
 		}
-		log.Printf("decoded token: %s", decoded_access)
+
+		var access_expiration time.Time
 
 		// check token exists in db
-		err = db.QueryRow("SELECT access_expires FROM sessions WHERE access_token = ?", decoded_access).
+		err = db.QueryRow("SELECT access_expires FROM sessions WHERE access_token = $1", utils.HashToken(decoded_access)).
 			Scan(&access_expiration)
 		if err != nil {
 			log.Printf("AuthSessionIsValid ERR2: %s", err)
@@ -49,7 +49,7 @@ func AuthSessionIsValid(db *sql.DB) fiber.Handler {
 
 		// check token expiration
 		if time.Now().UTC().After(access_expiration) {
-			log.Printf("AuthSessionIsValid ERR3: expired token %s | %s", access_expiration, decoded_access)
+			log.Printf("AuthSessionIsValid ERR3: expired token %s", access_expiration)
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrAccessExpired,
 			)
@@ -70,7 +70,7 @@ func AuthUserHasRole(db *sql.DB, allowedRoles ...models.UserRole) fiber.Handler 
 	return func(c *fiber.Ctx) error {
 		access_token := c.Cookies("access_token")
 
-		// incoming tokens must be decoded into binary (how they are stored in DB)
+		// incoming tokens must be decoded into binary, then hashed (how they are stored in DB)
 		decoded_access, err := base64.RawURLEncoding.DecodeString(access_token)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
@@ -78,14 +78,15 @@ func AuthUserHasRole(db *sql.DB, allowedRoles ...models.UserRole) fiber.Handler 
 			)
 		}
 
-		// Retrieve user role
+		// Retrieve user role from the users table, so role changes apply immediately
 		var user models.User
 
 		err = db.QueryRow(`
-            SELECT user_role
-            FROM sessions
-            WHERE access_token = ?
-        `, decoded_access).Scan(&user.Role)
+            SELECT u.role
+            FROM sessions s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.access_token = $1
+        `, utils.HashToken(decoded_access)).Scan(&user.Role)
 		if err != nil {
 			log.Printf("error: get user role %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(

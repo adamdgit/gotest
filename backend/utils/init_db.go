@@ -24,10 +24,11 @@ func InitDB(db *sql.DB) error {
 			id SERIAL PRIMARY KEY,
 			email TEXT UNIQUE NOT NULL,
 			password TEXT NOT NULL,
-			firstname TEXT NOT NULL,
-			lastname TEXT NOT NULL,
-			phone TEXT NOT NULL,
-			address TEXT NOT NULL,
+			-- not collected at register, filled in later from the profile
+			firstname TEXT NOT NULL DEFAULT '',
+			lastname TEXT NOT NULL DEFAULT '',
+			phone TEXT NOT NULL DEFAULT '',
+			address TEXT NOT NULL DEFAULT '',
 			role user_role NOT NULL DEFAULT 'member',
 			profile_url TEXT,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -48,6 +49,9 @@ func InitDB(db *sql.DB) error {
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		);
 		`,
+
+		// speeds up the expired session cleanup cron
+		`CREATE INDEX IF NOT EXISTS sessions_refresh_expires_idx ON sessions (refresh_expires);`,
 
 		// login history
 		`

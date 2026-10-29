@@ -7,14 +7,7 @@ import (
 )
 
 type LoginSessionRes struct {
-	User_ID       int    `json:"id"`
-	Access_Token  string `json:"access_token"`
-	Refresh_Token string `json:"refresh_token"`
-}
-
-type RefreshSessionRes struct {
-	Access_Token  string `json:"access_token"`
-	Refresh_Token string `json:"refresh_token"`
+	User_ID int `json:"id"`
 }
 
 type UserDataRes struct {

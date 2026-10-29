@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -95,7 +96,8 @@ func Login(db *sql.DB) fiber.Handler {
 		refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// Insert session data to database
-		err = services.DB_InsertSessionData(db, user.ID, user.Role, access_token, refresh_token, access_expiration, refresh_expiration)
+		// Only hashes are stored, raw tokens are sent to the client in cookies
+		err = services.DB_InsertSessionData(db, user.ID, utils.HashToken(access_token), utils.HashToken(refresh_token), access_expiration, refresh_expiration)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
@@ -136,10 +138,9 @@ func Login(db *sql.DB) fiber.Handler {
 			Expires:  refresh_expiration,
 		})
 
+		// Tokens are only sent as http-only cookies, never in the body
 		return c.Status(fiber.StatusOK).JSON(api.LoginSessionRes{
-			User_ID:       user.ID,
-			Access_Token:  access_tB64,
-			Refresh_Token: refresh_tB64,
+			User_ID: user.ID,
 		})
 	}
 }
@@ -163,7 +164,7 @@ func Logout(db *sql.DB) fiber.Handler {
 			)
 		}
 
-		err = services.DB_DeleteSessionData(db, decoded_refresh_token)
+		err = services.DB_DeleteSessionData(db, utils.HashToken(decoded_refresh_token))
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(
 				api.ErrInternalServer,
@@ -176,7 +177,7 @@ func Logout(db *sql.DB) fiber.Handler {
 			Value:    "",
 			HTTPOnly: true,
 			Secure:   false,
-			SameSite: "None",
+			SameSite: "Lax",
 			Expires:  time.Unix(0, 0),
 		})
 
@@ -185,7 +186,7 @@ func Logout(db *sql.DB) fiber.Handler {
 			Value:    "",
 			HTTPOnly: true,
 			Secure:   false,
-			SameSite: "None",
+			SameSite: "Lax",
 			Expires:  time.Unix(0, 0),
 		})
 
@@ -227,7 +228,7 @@ func Register(db *sql.DB) fiber.Handler {
 		}
 
 		// Hash password before inserting to db if email is available
-		hash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
@@ -278,6 +279,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 				api.ErrInternalServer,
 			)
 		}
+		hashed_refresh := utils.HashToken(decoded_refresh)
 
 		// Start a new DB transaciton to prevent race conditions for sessions
 		tx, err := db.BeginTx(c.Context(), &sql.TxOptions{})
@@ -288,7 +290,16 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 			)
 		}
 
-		refresh_expiration, err := services.DB_GetRefreshTokenExpiration(tx, decoded_refresh)
+		// Locks the session row until commit, so concurrent refreshes using
+		// the same token wait here, then find no row once it has rotated
+		refresh_expiration, err := services.DB_GetRefreshTokenExpiration(tx, hashed_refresh)
+		if errors.Is(err, sql.ErrNoRows) {
+			_ = tx.Rollback()
+			log.Printf("Refresh Error 3: unknown or already rotated refresh token")
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				api.ErrSessionExpired,
+			)
+		}
 		if err != nil {
 			_ = tx.Rollback()
 			log.Printf("Refresh Error 3: %s", err)
@@ -299,7 +310,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 
 		// Invalidate session if refresh token expired
 		if time.Now().UTC().After(refresh_expiration) {
-			err = services.DB_DeleteSessionByToken(tx, decoded_refresh)
+			err = services.DB_DeleteSessionByToken(tx, hashed_refresh)
 			if err != nil {
 				_ = tx.Rollback()
 				log.Printf("Refresh Error 4: %s", err)
@@ -335,6 +346,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		// Generate tokens using random bytes, saves space in db
 		new_access_token := make([]byte, 32)
 		if _, err := rand.Read(new_access_token); err != nil {
+			_ = tx.Rollback()
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
@@ -343,6 +355,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 
 		new_refresh_token := make([]byte, 32)
 		if _, err := rand.Read(new_refresh_token); err != nil {
+			_ = tx.Rollback()
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,
 			)
@@ -350,7 +363,7 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 		new_refresh_expiration := time.Now().UTC().Add(30 * 24 * time.Hour)
 
 		// update the users session with new tokens
-		err = services.DB_UpdateSessionDataByToken(tx, new_access_token, new_access_expiration, new_refresh_token, new_refresh_expiration, decoded_refresh)
+		err = services.DB_UpdateSessionDataByToken(tx, utils.HashToken(new_access_token), new_access_expiration, utils.HashToken(new_refresh_token), new_refresh_expiration, hashed_refresh)
 		if err != nil {
 			_ = tx.Rollback()
 			log.Printf("Error 6: %s", err)
@@ -390,9 +403,8 @@ func RefreshAccessToken(db *sql.DB) fiber.Handler {
 			Expires:  new_refresh_expiration,
 		})
 
-		return c.Status(fiber.StatusOK).JSON(api.RefreshSessionRes{
-			Access_Token:  access_tB64,
-			Refresh_Token: refresh_tB64,
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "Access token refreshed",
 		})
 	}
 }

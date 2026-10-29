@@ -1,3 +1,18 @@
+// Refresh tokens rotate on every use, so concurrent requests that get a 401
+// must share one refresh call, otherwise the later ones send a stale token
+let refreshInFlight: Promise<Response> | null = null;
+
+function refreshSession(): Promise<Response> {
+	if (!refreshInFlight) {
+		refreshInFlight = fetch('http://localhost:8081/api/auth/refresh', {
+			credentials: 'include'
+		}).finally(() => {
+			refreshInFlight = null;
+		});
+	}
+	return refreshInFlight;
+}
+
 // Automatically attempts to refresh access tokens if they expire
 // and sends request again if refresh is successful. 
 // Also a wrapper for fetch, returning errors
@@ -33,9 +48,7 @@ export async function authFetch(
 
 	// Attempt refresh
 	try {
-		const refreshRes = await fetch('http://localhost:8081/api/auth/refresh', {
-			credentials: 'include'
-		});
+		const refreshRes = await refreshSession();
 
 		// Refresh failed, return errors
 		if (!refreshRes.ok) {

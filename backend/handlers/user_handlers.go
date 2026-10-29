@@ -6,6 +6,7 @@ import (
 
 	"github.com/adamdgit/gotest/backend/api"
 	"github.com/adamdgit/gotest/backend/services"
+	"github.com/adamdgit/gotest/backend/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 )
@@ -22,7 +23,7 @@ func GetUserData(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		access_token := c.Cookies("access_token")
 
-		// incoming tokens must be decoded into binary (how they are stored in DB)
+		// incoming tokens must be decoded into binary, then hashed (how they are stored in DB)
 		decoded_access, err := base64.RawURLEncoding.DecodeString(access_token)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
@@ -30,7 +31,7 @@ func GetUserData(db *sql.DB) fiber.Handler {
 			)
 		}
 
-		data, err := services.DB_GetUserDataByToken(db, decoded_access)
+		data, err := services.DB_GetUserDataByToken(db, utils.HashToken(decoded_access))
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				api.ErrInternalServer,

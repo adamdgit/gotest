@@ -9,8 +9,8 @@ import (
 func CleanupExpiredSessions(db *sql.DB) {
 	current_time := time.Now().UTC()
 
-	_, err := db.Exec("DELETE FROM sessions WHERE refresh_expires < ?", current_time)
+	_, err := db.Exec("DELETE FROM sessions WHERE refresh_expires < $1", current_time)
 	if err != nil {
-		UpdateServerLogs(fmt.Sprintf("CRON DELETE EXPIRED SESSIONS: %e", err))
+		UpdateServerLogs(fmt.Sprintf("CRON DELETE EXPIRED SESSIONS: %v", err))
 	}
 }

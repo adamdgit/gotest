@@ -47,8 +47,8 @@ func main() {
 		log.Fatal("unable to connect to postgres:", err)
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(200)
-	db.SetMaxIdleConns(100)
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(10)
 	defer db.Close()
 
 	// Create database tables

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"strings"
 
@@ -35,9 +36,19 @@ func GetUserByQuery(db *sql.DB) fiber.Handler {
 
 func GetUserDataByID(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		id := c.Params("userid")
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(
+				api.ErrInvalidRequest,
+			)
+		}
 
 		user, err := services.DB_GetUserDataByID(db, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(
+				api.ErrNotFound,
+			)
+		}
 		if err != nil {
 			log.Printf("Error: %s", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(

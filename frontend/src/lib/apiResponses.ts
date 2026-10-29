@@ -29,8 +29,6 @@ export type UserRole =
 
 export interface LoginSessionRes {
   user_id: number;
-  access_token: string;
-  refresh_token: string;
 }
 
 export interface UserSessionRes {

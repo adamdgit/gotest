@@ -70,7 +70,7 @@ func DB_GetAllUserDataByQuery(db *sql.DB, query string) ([]api.AdminUserDataRes,
 	return users, nil
 }
 
-func DB_GetUserDataByID(db *sql.DB, id string) (api.AdminUserDataRes, error) {
+func DB_GetUserDataByID(db *sql.DB, id int) (api.AdminUserDataRes, error) {
 	var user api.AdminUserDataRes
 
 	err := db.QueryRow(
@@ -88,7 +88,7 @@ func DB_GetUserDataByID(db *sql.DB, id string) (api.AdminUserDataRes, error) {
 	FROM users 
 	WHERE id = $1`, id,
 	).Scan(
-		user.ID, user.Email, user.Firstname, user.Lastname, user.Phone, user.Address, user.Role, user.Profile_URL, user.Created_At, user.Updated_At,
+		&user.ID, &user.Email, &user.Firstname, &user.Lastname, &user.Phone, &user.Address, &user.Role, &user.Profile_URL, &user.Created_At, &user.Updated_At,
 	)
 
 	return user, err

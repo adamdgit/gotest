@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/adamdgit/gotest/backend/models"
@@ -25,9 +26,9 @@ func DB_InsertLoginHistory(db *sql.DB, userID int, ip_address string, user_agent
 	return err
 }
 
-func DB_InsertSessionData(db *sql.DB, userID int, userRole models.UserRole, access_token []byte, refresh_token []byte, access_expiration time.Time, refresh_expiration time.Time) error {
-	_, err := db.Exec("INSERT INTO sessions (user_id, user_role, access_token, refresh_token, access_expires, refresh_expires) VALUES ($1, $2, $3, $4, $5, $6)",
-		userID, userRole, access_token, refresh_token, access_expiration, refresh_expiration)
+func DB_InsertSessionData(db *sql.DB, userID int, access_token []byte, refresh_token []byte, access_expiration time.Time, refresh_expiration time.Time) error {
+	_, err := db.Exec("INSERT INTO sessions (user_id, access_token, refresh_token, access_expires, refresh_expires) VALUES ($1, $2, $3, $4, $5)",
+		userID, access_token, refresh_token, access_expiration, refresh_expiration)
 
 	return err
 }
@@ -58,7 +59,7 @@ func DB_InsertNewUserData(db *sql.DB, email string, hash []byte, profile_url str
 func DB_GetRefreshTokenExpiration(tx *sql.Tx, token []byte) (time.Time, error) {
 	var refresh_expiration time.Time
 
-	err := tx.QueryRow("SELECT refresh_expires FROM sessions WHERE refresh_token = $1", token).
+	err := tx.QueryRow("SELECT refresh_expires FROM sessions WHERE refresh_token = $1 FOR UPDATE", token).
 		Scan(&refresh_expiration)
 
 	return refresh_expiration, err
@@ -71,8 +72,20 @@ func DB_DeleteSessionByToken(tx *sql.Tx, token []byte) error {
 }
 
 func DB_UpdateSessionDataByToken(tx *sql.Tx, access_token []byte, access_expires time.Time, refresh_token []byte, refresh_expires time.Time, token []byte) error {
-	_, err := tx.Exec("UPDATE sessions SET access_token = $1, access_expires = $2, refresh_token = $3, refresh_expires = $4 WHERE refresh_token = $5",
+	res, err := tx.Exec("UPDATE sessions SET access_token = $1, access_expires = $2, refresh_token = $3, refresh_expires = $4, updated_at = now() WHERE refresh_token = $5",
 		access_token, access_expires, refresh_token, refresh_expires, token)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// Must rotate exactly one session, otherwise the new tokens would not exist in the DB
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return fmt.Errorf("refresh rotated %d sessions, expected 1", n)
+	}
+
+	return nil
 }
